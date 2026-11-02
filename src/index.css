@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    background-color: #0b0e14;
+    color: #e2e8f0;
+  }
+
+  /* Financial numbers formatting */
+  .font-mono-numbers {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom scrollbar for clean UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f141c;
+}
+::-webkit-scrollbar-thumb {
+  background: #252e3d;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b4759;
+}
+
+/* Price flash animations */
+@keyframes flash-up {
+  0% {
+    background-color: rgba(239, 68, 68, 0.35); /* Korean market red up */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-down {
+  0% {
+    background-color: rgba(59, 130, 246, 0.35); /* Korean market blue down */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-green {
+  0% {
+    background-color: rgba(34, 197, 94, 0.35); /* Global market green up */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.flash-up {
+  animation: flash-up 0.75s ease-out;
+}
+
+.flash-down {
+  animation: flash-down 0.75s ease-out;
+}
+
+.flash-green {
+  animation: flash-green 0.75s ease-out;
+}
+

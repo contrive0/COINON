@@ -1,0 +1,6 @@
+{
+  "name": "인코인 (InCoin) - 실시간 김치 프리미엄",
+  "description": "광고 없는 실시간 암호화폐 김치 프리미엄 트래커. 업비트와 바이낸스 간 실시간 가격 차이, 트레이딩뷰 차트 및 스크리너 제공.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
