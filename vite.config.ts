@@ -5,6 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: '/COINON/', // 이 부분을 추가해주세요
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
