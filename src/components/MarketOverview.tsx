@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   BarChart3, 
   LineChart, 
@@ -29,8 +29,14 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({
   const [selectedSymbol, setSelectedSymbol] = useState<string>('BINANCE:BTCUSDT');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
-  // Top 5 highlight coins
-  const majorCoins = coins.slice(0, 5);
+  // Top 5 benchmark highlight coins
+  const majorCoins = useMemo(() => {
+    const majorSymbols = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'];
+    const matched = majorSymbols
+      .map((sym) => coins.find((c) => c.symbol === sym))
+      .filter((c): c is CoinData => Boolean(c));
+    return matched.length >= 3 ? matched : coins.slice(0, 5);
+  }, [coins]);
 
   const majorChartOptions = [
     { label: 'BTC/USDT', symbol: 'BINANCE:BTCUSDT' },

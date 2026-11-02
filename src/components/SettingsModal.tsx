@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { X, DollarSign, Palette, Clock, Bell, RotateCcw, Check } from 'lucide-react';
+import React from 'react';
+import { X, DollarSign, Palette, Clock, Bell, RefreshCw, Check } from 'lucide-react';
 import { ColorTheme, ExchangeRateInfo } from '../types/crypto';
+import { formatExchangeRate, formatPercent } from '../utils/formatters';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   exchangeRate: ExchangeRateInfo;
-  onUpdateExchangeRate: (rate: number, isManual: boolean) => void;
+  onRefreshExchangeRate: () => void;
   colorTheme: ColorTheme;
   onChangeColorTheme: (theme: ColorTheme) => void;
   refreshInterval: number; // in seconds
@@ -23,7 +24,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   exchangeRate,
-  onUpdateExchangeRate,
+  onRefreshExchangeRate,
   colorTheme,
   onChangeColorTheme,
   refreshInterval,
@@ -35,17 +36,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   lowAlertThreshold,
   onUpdateLowThreshold,
 }) => {
-  const [customRate, setCustomRate] = useState<string>(exchangeRate.rate.toString());
-  const [isManual, setIsManual] = useState<boolean>(false);
-
   if (!isOpen) return null;
-
-  const handleSaveRate = () => {
-    const parsed = parseFloat(customRate);
-    if (!isNaN(parsed) && parsed > 500 && parsed < 3000) {
-      onUpdateExchangeRate(parsed, isManual);
-    }
-  };
 
   return (
     <div 
@@ -72,49 +63,53 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Content */}
         <div className="p-5 space-y-6 text-xs text-slate-200 max-h-[75vh] overflow-y-auto">
           
-          {/* 1. Exchange Rate Settings */}
+          {/* 1. Real-time Exchange Rate Settings (실시간 환율 전용) */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-slate-300 flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4 text-emerald-400" />
-                USD/KRW 기준 환율 설정
+                USD/KRW 기준 환율 (100% 실시간 연동)
               </span>
-              <span className="text-[11px] text-slate-400">현재: ₩{exchangeRate.rate.toLocaleString()}</span>
+              <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                실시간 수신 중
+              </span>
             </div>
 
             <div className="space-y-2 bg-[#131822] p-3 rounded-lg border border-slate-800">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  value={customRate}
-                  onChange={(e) => {
-                    setCustomRate(e.target.value);
-                    setIsManual(true);
-                  }}
-                  step="0.1"
-                  className="bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-1.5 text-white font-mono-numbers text-xs w-full focus:outline-none focus:border-indigo-500"
-                  placeholder="환율 입력 (예: 1442.5)"
-                />
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] text-slate-400">현재 적용 실시간 환율</div>
+                  <div className="text-lg font-bold font-mono-numbers text-white flex items-baseline gap-2">
+                    ₩{formatExchangeRate(exchangeRate.rate)}
+                    <span className="text-xs text-slate-400 font-normal">
+                      ({formatPercent(exchangeRate.changeRate)})
+                    </span>
+                  </div>
+                </div>
+
                 <button
-                  onClick={handleSaveRate}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium whitespace-nowrap transition-colors"
+                  onClick={onRefreshExchangeRate}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium flex items-center gap-1.5 transition-colors"
+                  title="실시간 환율 즉시 수신"
                 >
-                  적용
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>환율 새로고침</span>
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                <span>데이터 소스: {exchangeRate.source}</span>
-                <button
-                  onClick={() => {
-                    setIsManual(false);
-                    onUpdateExchangeRate(1442.5, false);
-                    setCustomRate('1442.5');
-                  }}
-                  className="text-indigo-400 hover:underline"
-                >
-                  실시간 자동수신 복원
-                </button>
+              <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-0.5">
+                <div className="flex justify-between">
+                  <span>환율 출처:</span>
+                  <span className="text-slate-300">{exchangeRate.source}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>최종 갱신:</span>
+                  <span className="text-slate-300 font-mono-numbers">{exchangeRate.updatedAt}</span>
+                </div>
+                <p className="text-[10px] text-slate-500 pt-1">
+                  * 코인온은 업비트 및 글로벌 외환시장의 실시간 기준환율로만 원화 가격 및 김치프리미엄을 정밀 산출합니다.
+                </p>
               </div>
             </div>
           </div>

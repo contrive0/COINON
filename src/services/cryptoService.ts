@@ -4,11 +4,11 @@ import { INITIAL_COINS, INITIAL_EXCHANGE_RATE } from '../data/initialCoins';
 export class CryptoService {
   private static instance: CryptoService;
   private currentExchangeRate: ExchangeRateInfo = {
-    rate: INITIAL_EXCHANGE_RATE,
-    prevRate: INITIAL_EXCHANGE_RATE,
-    changeRate: 0.15,
-    source: '하나은행 매매기준율 (실시간)',
-    updatedAt: new Date().toLocaleTimeString('ko-KR'),
+    rate: 0,
+    prevRate: 0,
+    changeRate: 0,
+    source: '네이버 환율 (하나은행 기준)',
+    updatedAt: '',
   };
 
   public static getInstance(): CryptoService {
@@ -18,99 +18,335 @@ export class CryptoService {
     return CryptoService.instance;
   }
 
-  // Fetch USD/KRW exchange rate from public APIs with timeout and fallback
+  // Fetch USD/KRW exchange rate from Naver Search Calculator API
   public async fetchExchangeRate(): Promise<ExchangeRateInfo> {
+    // 1. Primary: Naver Mobile Search Real-time Exchange Rate (KEB Hana Bank)
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-      const res = await fetch('https://open.er-api.com/v6/latest/USD', {
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.rates && typeof data.rates.KRW === 'number') {
-          const newRate = Math.round(data.rates.KRW * 100) / 100;
-          const prev = this.currentExchangeRate.rate;
-          const changeRate = prev > 0 ? ((newRate - prev) / prev) * 100 : 0;
-          this.currentExchangeRate = {
-            rate: newRate,
-            prevRate: prev,
-            changeRate: Math.round(changeRate * 100) / 100,
-            source: '글로벌 외환 실시간 기준율',
-            updatedAt: new Date().toLocaleTimeString('ko-KR'),
-          };
-          return this.currentExchangeRate;
-        }
-      }
-    } catch {
-      // Ignore network timeout or CORS, continue with fallback
-    }
-
-    // Secondary fallback fetch
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.rates?.KRW) {
-          const newRate = Math.round(data.rates.KRW * 100) / 100;
-          this.currentExchangeRate.rate = newRate;
-          this.currentExchangeRate.updatedAt = new Date().toLocaleTimeString('ko-KR');
-          return this.currentExchangeRate;
-        }
-      }
-    } catch {
-      // Handled silently
-    }
-
-    // Default stable rate
-    this.currentExchangeRate.updatedAt = new Date().toLocaleTimeString('ko-KR');
-    return this.currentExchangeRate;
-  }
-
-  // Fetch real-time tickers from Upbit and Binance
-  public async fetchLiveTickers(
-    coins: CoinData[],
-    exchangeRate: number
-  ): Promise<{ updatedCoins: CoinData[]; isLiveApi: boolean }> {
-    let hasLiveUpbit = false;
-    let upbitMap = new Map<string, any>();
-    let binanceMap = new Map<string, any>();
-
-    // 1. Upbit API
-    try {
-      const markets = coins.map((c) => c.upbitMarket).join(',');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-      const res = await fetch(`https://api.upbit.com/v1/ticker?markets=${markets}`, {
+      const naverUrl = 'https://m.search.naver.com/p/csearch/content/qapirender.nhn?key=calculator&pkid=141&q=%ED%99%98%EC%9C%A8&where=m&u1=keb&u6=standardUnit&u7=0&u3=USD&u4=KRW&u8=down&u2=1';
+      const res = await fetch(naverUrl, {
         signal: controller.signal,
         headers: { Accept: 'application/json' },
       });
       clearTimeout(timeoutId);
 
       if (res.ok) {
-        const upbitData = await res.json();
-        if (Array.isArray(upbitData) && upbitData.length > 0) {
-          hasLiveUpbit = true;
-          upbitData.forEach((item) => {
-            upbitMap.set(item.market, item);
-          });
+        const data = await res.json();
+        if (data && Array.isArray(data.country) && data.country.length >= 2) {
+          const rawVal = data.country[1].value; // e.g. "1,342.60"
+          const parsed = parseFloat(String(rawVal).replace(/,/g, ''));
+          if (!isNaN(parsed) && parsed > 0) {
+            const liveRate = Math.round(parsed * 10) / 10;
+            const prev = this.currentExchangeRate.rate > 0 ? this.currentExchangeRate.rate : liveRate;
+            const changeRate = prev > 0 ? ((liveRate - prev) / prev) * 100 : 0;
+
+            this.currentExchangeRate = {
+              rate: liveRate,
+              prevRate: prev,
+              changeRate: Math.round(changeRate * 100) / 100,
+              source: '네이버 환율 (하나은행 기준)',
+              updatedAt: new Date().toLocaleTimeString('ko-KR'),
+            };
+            return this.currentExchangeRate;
+          }
+        }
+      }
+    } catch {
+      // Fall through to backup APIs if network blocks
+    }
+
+    // 2. Secondary backup: Open Exchange Rates API (open.er-api.com)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch('https://open.er-api.com/v6/latest/USD', {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.result === 'success' && data.rates && typeof data.rates.KRW === 'number') {
+          const liveRate = Math.round(data.rates.KRW * 10) / 10;
+          const prev = this.currentExchangeRate.rate > 0 ? this.currentExchangeRate.rate : liveRate;
+          const changeRate = prev > 0 ? ((liveRate - prev) / prev) * 100 : 0;
+          
+          this.currentExchangeRate = {
+            rate: liveRate,
+            prevRate: prev,
+            changeRate: Math.round(changeRate * 100) / 100,
+            source: 'Open Exchange Rates (실시간)',
+            updatedAt: new Date().toLocaleTimeString('ko-KR'),
+          };
+          return this.currentExchangeRate;
+        }
+      }
+    } catch {
+      // Fall through to backup
+    }
+
+    // 2. Secondary backup: ExchangeRate-API v4
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.rates && typeof data.rates.KRW === 'number') {
+          const liveRate = Math.round(data.rates.KRW * 10) / 10;
+          const prev = this.currentExchangeRate.rate > 0 ? this.currentExchangeRate.rate : liveRate;
+          const changeRate = prev > 0 ? ((liveRate - prev) / prev) * 100 : 0;
+          
+          this.currentExchangeRate = {
+            rate: liveRate,
+            prevRate: prev,
+            changeRate: Math.round(changeRate * 100) / 100,
+            source: 'ExchangeRate-API (실시간 백업)',
+            updatedAt: new Date().toLocaleTimeString('ko-KR'),
+          };
+          return this.currentExchangeRate;
+        }
+      }
+    } catch {
+      // Fall through
+    }
+
+    // 3. Third backup: Dunamu Forex API
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch('https://quotation-api-cdn.dunamu.com/v1/forex/recent?codes=FRX.KRWUSD', {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && typeof data[0].basePrice === 'number') {
+          const item = data[0];
+          const liveRate = Math.round(item.basePrice * 10) / 10;
+          const prev = this.currentExchangeRate.rate > 0 ? this.currentExchangeRate.rate : liveRate;
+          const changePercent = item.changeRate !== undefined 
+            ? (item.change === 'FALL' ? -(item.changeRate * 100) : item.changeRate * 100)
+            : (prev > 0 ? ((liveRate - prev) / prev) * 100 : 0);
+
+          this.currentExchangeRate = {
+            rate: liveRate,
+            prevRate: prev,
+            changeRate: Math.round(changePercent * 100) / 100,
+            source: '두나무 외환 (실시간)',
+            updatedAt: new Date().toLocaleTimeString('ko-KR'),
+          };
+          return this.currentExchangeRate;
         }
       }
     } catch {
       // Handled silently
     }
 
-    // 2. Binance API
+    this.currentExchangeRate.updatedAt = new Date().toLocaleTimeString('ko-KR');
+    return this.currentExchangeRate;
+  }
+
+  // Fetch all KRW markets dynamically from https://api.upbit.com/v1/market/all
+  public async fetchUpbitMarkets(): Promise<CoinData[]> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch('https://api.upbit.com/v1/market/all', {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const krwMarkets = data.filter((item: any) => item.market && item.market.startsWith('KRW-'));
+          if (krwMarkets.length > 0) {
+            return krwMarkets.map((item: any) => {
+              const symbol = item.market.replace('KRW-', '');
+              const binanceSymbol = `${symbol}USDT`;
+              return {
+                symbol,
+                nameKo: item.korean_name,
+                nameEn: item.english_name,
+                upbitMarket: item.market,
+                binanceSymbol,
+                upbitPrice: 0,
+                upbitChangeRate: 0,
+                upbitChangePrice: 0,
+                upbitVolume24h: 0,
+                binancePrice: 0,
+                binanceChangeRate: 0,
+                binanceVolume24h: 0,
+                binanceKrwPrice: 0,
+                kimchiPremiumRate: 0,
+                kimchiDiffPrice: 0,
+                high52wPrice: 0,
+                high52wDiffRate: 0,
+                low52wPrice: 0,
+                low52wDiffRate: 0,
+                high24hPrice: 0,
+                low24hPrice: 0,
+                lastUpdated: Date.now(),
+              };
+            });
+          }
+        }
+      }
+    } catch {
+      // Fallback to INITIAL_COINS if network request fails
+    }
+    return INITIAL_COINS;
+  }
+
+  // Connect to Upbit Real-time WebSocket (wss://api.upbit.com/websocket/v1)
+  public connectUpbitWebSocket(
+    marketCodes: string[],
+    onTicker: (ticker: any) => void
+  ): () => void {
+    if (typeof window === 'undefined' || !window.WebSocket || marketCodes.length === 0) {
+      return () => {};
+    }
+
+    let ws: WebSocket | null = null;
+    let isDisposed = false;
+    let reconnectTimer: any = null;
+
+    const connect = () => {
+      if (isDisposed) return;
+      try {
+        ws = new WebSocket('wss://api.upbit.com/websocket/v1');
+        ws.binaryType = 'blob';
+
+        ws.onopen = () => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            const payload = [
+              { ticket: `coinon-${Date.now()}` },
+              { type: 'ticker', codes: marketCodes },
+              { format: 'DEFAULT' },
+            ];
+            ws.send(JSON.stringify(payload));
+          }
+        };
+
+        ws.onmessage = async (event) => {
+          if (isDisposed) return;
+          try {
+            let jsonText = '';
+            if (event.data instanceof Blob) {
+              jsonText = await event.data.text();
+            } else if (typeof event.data === 'string') {
+              jsonText = event.data;
+            }
+            if (jsonText) {
+              const data = JSON.parse(jsonText);
+              if (data && data.code && data.trade_price !== undefined) {
+                onTicker(data);
+              }
+            }
+          } catch {
+            // Handled silently
+          }
+        };
+
+        ws.onerror = () => {
+          // Handled silently
+        };
+
+        ws.onclose = () => {
+          if (!isDisposed) {
+            reconnectTimer = setTimeout(connect, 3000);
+          }
+        };
+      } catch {
+        if (!isDisposed) {
+          reconnectTimer = setTimeout(connect, 5000);
+        }
+      }
+    };
+
+    connect();
+
+    return () => {
+      isDisposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (ws) {
+        try {
+          ws.close();
+        } catch {
+          // Handled
+        }
+        ws = null;
+      }
+    };
+  }
+
+  // Fetch real-time tickers from Upbit (chunked in 100s) and Binance
+  public async fetchLiveTickers(
+    coins: CoinData[],
+    exchangeRate: number
+  ): Promise<{ updatedCoins: CoinData[]; isLiveApi: boolean }> {
+    let hasLiveUpbit = false;
+    const upbitMap = new Map<string, any>();
+    const binanceMap = new Map<string, any>();
+
+    // 1. Chunk Upbit markets into groups of 100 and fetch in parallel
+    const marketCodes = coins.map((c) => c.upbitMarket);
+    const chunkSize = 100;
+    const marketChunks: string[][] = [];
+    for (let i = 0; i < marketCodes.length; i += chunkSize) {
+      marketChunks.push(marketCodes.slice(i, i + chunkSize));
+    }
+
+    try {
+      const upbitFetchPromises = marketChunks.map(async (chunk) => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          const res = await fetch(`https://api.upbit.com/v1/ticker?markets=${chunk.join(',')}`, {
+            signal: controller.signal,
+            headers: { Accept: 'application/json' },
+          });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch {
+          // Handled per chunk
+        }
+        return [];
+      });
+
+      const chunkResults = await Promise.all(upbitFetchPromises);
+      chunkResults.forEach((list) => {
+        if (Array.isArray(list)) {
+          list.forEach((item) => {
+            if (item && item.market) {
+              upbitMap.set(item.market, item);
+              hasLiveUpbit = true;
+            }
+          });
+        }
+      });
+    } catch {
+      // Handled silently
+    }
+
+    // 2. Binance API (single call for all symbols)
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -129,7 +365,7 @@ export class CryptoService {
         }
       }
     } catch {
-      // If api.binance.com fails, try data-api.binance.vision
+      // Secondary Binance fallback endpoint
       try {
         const controller2 = new AbortController();
         const timeoutId2 = setTimeout(() => controller2.abort(), 3000);
@@ -150,7 +386,7 @@ export class CryptoService {
       }
     }
 
-    // If live API responded, assemble updated coins
+    // If live Upbit responded, assemble updated coins
     if (hasLiveUpbit && upbitMap.size > 0) {
       const updatedCoins = coins.map((coin) => {
         const upbit = upbitMap.get(coin.upbitMarket);
@@ -159,15 +395,15 @@ export class CryptoService {
         const newUpbitPrice = upbit ? upbit.trade_price : coin.upbitPrice;
         const newBinancePrice = binance ? parseFloat(binance.lastPrice) : coin.binancePrice;
 
-        const binanceKrwPrice = newBinancePrice * exchangeRate;
-        const kimchiDiffPrice = newUpbitPrice - binanceKrwPrice;
+        const binanceKrwPrice = newBinancePrice > 0 && exchangeRate > 0 ? newBinancePrice * exchangeRate : 0;
+        const kimchiDiffPrice = binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
         const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
 
         const high52 = upbit?.highest_52_week_price || coin.high52wPrice;
         const low52 = upbit?.lowest_52_week_price || coin.low52wPrice;
 
         let flashState: 'up' | 'down' | null = null;
-        if (coin.upbitPrice !== newUpbitPrice) {
+        if (coin.upbitPrice > 0 && newUpbitPrice > 0 && coin.upbitPrice !== newUpbitPrice) {
           flashState = newUpbitPrice > coin.upbitPrice ? 'up' : 'down';
         }
 
@@ -185,8 +421,8 @@ export class CryptoService {
           binanceVolume24h: binance ? parseFloat(binance.quoteVolume) : coin.binanceVolume24h,
 
           binanceKrwPrice,
-          kimchiPremiumRate,
-          kimchiDiffPrice,
+          kimchiPremiumRate: Math.round(kimchiPremiumRate * 100) / 100,
+          kimchiDiffPrice: Math.round(kimchiDiffPrice),
 
           high52wPrice: high52,
           high52wDiffRate: high52 > 0 ? ((newUpbitPrice - high52) / high52) * 100 : 0,
@@ -203,8 +439,7 @@ export class CryptoService {
       return { updatedCoins, isLiveApi: true };
     }
 
-    // Fallback Simulation Engine: Real-time realistic micro-ticks
-    // Ensures uninterrupted smooth experience even if local browser blocks third-party requests
+    // Fallback Simulation Engine
     const updatedCoins = this.simulateMarketTick(coins, exchangeRate);
     return { updatedCoins, isLiveApi: false };
   }
@@ -212,18 +447,16 @@ export class CryptoService {
   // Realistic simulation tick for fallback
   public simulateMarketTick(coins: CoinData[], exchangeRate: number): CoinData[] {
     return coins.map((coin) => {
-      // 40% chance of price micro-movement per tick for natural market pulse
-      const willMove = Math.random() < 0.45;
+      if (coin.upbitPrice === 0) return coin;
+      const willMove = Math.random() < 0.35;
       if (!willMove) {
         return { ...coin, flashState: null };
       }
 
-      // Micro variance between -0.25% and +0.28%
       const variance = (Math.random() - 0.48) * 0.005;
       const binanceVariance = (Math.random() - 0.48) * 0.005;
 
       const rawNewUpbitPrice = coin.upbitPrice * (1 + variance);
-      // Round appropriately based on magnitude
       let newUpbitPrice = rawNewUpbitPrice;
       if (rawNewUpbitPrice > 1000000) {
         newUpbitPrice = Math.round(rawNewUpbitPrice / 1000) * 1000;
@@ -237,12 +470,12 @@ export class CryptoService {
         newUpbitPrice = Math.round(rawNewUpbitPrice * 10000) / 10000;
       }
 
-      const newBinancePrice = Number((coin.binancePrice * (1 + binanceVariance)).toFixed(
+      const newBinancePrice = coin.binancePrice > 0 ? Number((coin.binancePrice * (1 + binanceVariance)).toFixed(
         coin.binancePrice < 0.01 ? 7 : coin.binancePrice < 1 ? 4 : 2
-      ));
+      )) : 0;
 
-      const binanceKrwPrice = newBinancePrice * exchangeRate;
-      const kimchiDiffPrice = newUpbitPrice - binanceKrwPrice;
+      const binanceKrwPrice = newBinancePrice > 0 && exchangeRate > 0 ? newBinancePrice * exchangeRate : 0;
+      const kimchiDiffPrice = binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
       const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
 
       const delta = newUpbitPrice - coin.upbitPrice;

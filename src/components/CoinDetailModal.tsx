@@ -13,6 +13,7 @@ import { CoinData, ColorTheme, ExchangeRateInfo } from '../types/crypto';
 import { TradingViewChart } from './TradingViewChart';
 import { 
   formatKrw, 
+  formatExchangeRate,
   formatUsd, 
   formatPercent, 
   formatTradeVolume, 
@@ -146,23 +147,25 @@ export const CoinDetailModal: React.FC<CoinDetailModalProps> = ({
 
               <div className="bg-[#0f141d] p-3 rounded-lg border border-slate-800/80">
                 <div className="text-[11px] text-slate-400 font-sans mb-1">바이낸스 가격 (USD)</div>
-                <div className="text-sm font-bold text-white">{formatUsd(coin.binancePrice)}</div>
+                <div className="text-sm font-bold text-white">{coin.binancePrice > 0 ? formatUsd(coin.binancePrice) : '미지원'}</div>
                 <div className="text-[10px] text-slate-400 mt-0.5">글로벌 마켓 기준가</div>
               </div>
 
               <div className="bg-[#0f141d] p-3 rounded-lg border border-slate-800/80">
                 <div className="text-[11px] text-slate-400 font-sans mb-1">바이낸스 환산가 (KRW)</div>
-                <div className="text-sm font-bold text-indigo-300">₩{formatKrw(coin.binanceKrwPrice)}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">환율: ₩{formatKrw(exchangeRate.rate)} 적용</div>
+                <div className="text-sm font-bold text-indigo-300">
+                  {coin.binancePrice > 0 ? `₩${formatKrw(coin.binanceKrwPrice)}` : '-'}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">환율: ₩{formatExchangeRate(exchangeRate.rate)} 적용</div>
               </div>
 
               <div className="bg-[#0f141d] p-3 rounded-lg border border-slate-800/80">
                 <div className="text-[11px] text-slate-400 font-sans mb-1">김프 비율 및 차액</div>
                 <div className={`text-sm font-bold ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)}`}>
-                  {formatPercent(coin.kimchiPremiumRate)}
+                  {coin.binancePrice > 0 ? formatPercent(coin.kimchiPremiumRate) : '-'}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  차액: {coin.kimchiDiffPrice > 0 ? '+' : ''}₩{formatKrw(coin.kimchiDiffPrice)}
+                  {coin.binancePrice > 0 ? `차액: ${coin.kimchiDiffPrice > 0 ? '+' : ''}₩${formatKrw(coin.kimchiDiffPrice)}` : '국내 단독 상장'}
                 </div>
               </div>
 

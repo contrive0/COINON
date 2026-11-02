@@ -14,6 +14,12 @@ export function formatKrw(price: number): string {
   }
 }
 
+// Format Exchange Rate (USD/KRW) to 1 decimal place
+export function formatExchangeRate(rate: number): string {
+  if (rate === undefined || rate === null || isNaN(rate)) return '0.0';
+  return rate.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 // Format USD Price
 export function formatUsd(price: number): string {
   if (price === undefined || price === null || isNaN(price)) return '$0.00';

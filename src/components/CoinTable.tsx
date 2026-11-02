@@ -392,10 +392,14 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                           ₩{formatKrw(coin.upbitPrice)}
                         </div>
                         {/* Row 2: Binance USD Price & Converted KRW */}
-                        <div className="text-[11px] text-slate-400 flex items-center space-x-1">
-                          <span>{formatUsd(coin.binancePrice)}</span>
-                          <span className="text-slate-400">·</span>
-                          <span>₩{formatKrw(coin.binanceKrwPrice)}</span>
+                        <div className="text-[11px] text-slate-400">
+                          {coin.binancePrice > 0 ? (
+                            <span>
+                              {formatUsd(coin.binancePrice)}(₩{formatKrw(coin.binanceKrwPrice)})
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">바이낸스 미지원</span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -403,14 +407,20 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     {/* 3. 김프 (2-Row: Kimp % / Diff KRW) */}
                     <td className="py-2.5 px-3 text-right">
                       <div className="flex flex-col items-end">
-                        {/* Row 1: Kimp % */}
-                        <div className={`font-bold text-sm ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)}`}>
-                          {formatPercent(coin.kimchiPremiumRate)}
-                        </div>
-                        {/* Row 2: Kimp Diff KRW */}
-                        <div className={`text-[11px] ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)} opacity-90`}>
-                          {coin.kimchiDiffPrice > 0 ? '+' : ''}₩{formatKrw(coin.kimchiDiffPrice)}
-                        </div>
+                        {coin.binancePrice > 0 ? (
+                          <>
+                            {/* Row 1: Kimp % */}
+                            <div className={`font-bold text-sm ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)}`}>
+                              {formatPercent(coin.kimchiPremiumRate)}
+                            </div>
+                            {/* Row 2: Kimp Diff KRW */}
+                            <div className={`text-[11px] ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)} opacity-90`}>
+                              {coin.kimchiDiffPrice > 0 ? '+' : ''}₩{formatKrw(coin.kimchiDiffPrice)}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-slate-500 text-xs">-</div>
+                        )}
                       </div>
                     </td>
 

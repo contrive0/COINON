@@ -11,7 +11,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { ColorTheme, ExchangeRateInfo } from '../types/crypto';
-import { formatKrw, formatPercent, getPriceChangeColor } from '../utils/formatters';
+import { formatKrw, formatExchangeRate, formatPercent, getPriceChangeColor } from '../utils/formatters';
 
 interface HeaderProps {
   exchangeRate: ExchangeRateInfo;
@@ -24,7 +24,6 @@ interface HeaderProps {
   onManualRefresh: () => void;
   isRefreshing: boolean;
   onOpenSettings: () => void;
-  avgKimchi: number;
   btcKimchi: number;
   isLiveApi: boolean;
 }
@@ -40,7 +39,6 @@ export const Header: React.FC<HeaderProps> = ({
   onManualRefresh,
   isRefreshing,
   onOpenSettings,
-  avgKimchi,
   btcKimchi,
   isLiveApi,
 }) => {
@@ -72,11 +70,13 @@ export const Header: React.FC<HeaderProps> = ({
                 USD/KRW
               </span>
               <span className="font-mono-numbers font-bold text-white text-sm">
-                ₩{formatKrw(exchangeRate.rate)}
+                {exchangeRate.rate > 0 ? `₩${formatExchangeRate(exchangeRate.rate)}` : '실시간 수신 중...'}
               </span>
-              <span className={`text-[11px] font-mono-numbers ${getPriceChangeColor(exchangeRate.changeRate, colorTheme)}`}>
-                ({formatPercent(exchangeRate.changeRate)})
-              </span>
+              {exchangeRate.rate > 0 && (
+                <span className={`text-[11px] font-mono-numbers ${getPriceChangeColor(exchangeRate.changeRate, colorTheme)}`}>
+                  ({formatPercent(exchangeRate.changeRate)})
+                </span>
+              )}
             </div>
 
             <div className="hidden sm:block h-3.5 w-px bg-slate-700/60" />
@@ -86,16 +86,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-slate-400">BTC 김프</span>
               <span className={`font-mono-numbers font-bold ${getPriceChangeColor(btcKimchi, colorTheme)}`}>
                 {formatPercent(btcKimchi)}
-              </span>
-            </div>
-
-            <div className="hidden md:block h-3.5 w-px bg-slate-700/60" />
-
-            {/* Average Kimp */}
-            <div className="hidden md:flex items-center space-x-1.5">
-              <span className="text-slate-400">평균 김프</span>
-              <span className={`font-mono-numbers font-bold ${getPriceChangeColor(avgKimchi, colorTheme)}`}>
-                {formatPercent(avgKimchi)}
               </span>
             </div>
           </div>

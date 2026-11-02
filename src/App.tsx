@@ -27,11 +27,11 @@ export default function App() {
   // App States
   const [coins, setCoins] = useState<CoinData[]>(INITIAL_COINS);
   const [exchangeRate, setExchangeRate] = useState<ExchangeRateInfo>({
-    rate: INITIAL_EXCHANGE_RATE,
-    prevRate: INITIAL_EXCHANGE_RATE,
-    changeRate: 0.15,
-    source: '외환 실시간 기준율',
-    updatedAt: new Date().toLocaleTimeString('ko-KR'),
+    rate: 0,
+    prevRate: 0,
+    changeRate: 0,
+    source: '네이버 환율 (하나은행 기준)',
+    updatedAt: '',
   });
   const [isLiveApi, setIsLiveApi] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -54,8 +54,8 @@ export default function App() {
   const [highAlertThreshold, setHighAlertThreshold] = useState<number>(5.0);
   const [lowAlertThreshold, setLowAlertThreshold] = useState<number>(0.0);
 
-  // Table Sorting & Filtering
-  const [sortField, setSortField] = useState<SortField>('kimchiPremiumRate');
+  // Table Sorting & Filtering (Default: 현재가 순 정렬)
+  const [sortField, setSortField] = useState<SortField>('upbitPrice');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
@@ -81,20 +81,40 @@ export default function App() {
     localStorage.setItem('incoin_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  // Fetch Exchange Rate
+  // Fetch Live Exchange Rate & Immediately Recalculate KRW for All Coins
   const updateExchangeRate = useCallback(async () => {
     const rateInfo = await cryptoService.fetchExchangeRate();
     setExchangeRate(rateInfo);
+    
+    // 실시간 환율을 반영하여 모든 코인의 환산 원화가 및 김프 즉시 재계산
+    setCoins((prevCoins) =>
+      prevCoins.map((coin) => {
+        const binanceKrwPrice = coin.binancePrice * rateInfo.rate;
+        const kimchiDiffPrice = coin.upbitPrice - binanceKrwPrice;
+        const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
+        return {
+          ...coin,
+          binanceKrwPrice,
+          kimchiDiffPrice: Math.round(kimchiDiffPrice),
+          kimchiPremiumRate: Math.round(kimchiPremiumRate * 100) / 100,
+        };
+      })
+    );
+    return rateInfo;
   }, [cryptoService]);
 
-  // Fetch Market Tickers
+  // Fetch Market Tickers (100% 실시간 환율로 원화 환산 및 김프 산출)
   const updateMarketData = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
+      // 최신 실시간 환율 확인 후 연산
+      const currentLiveRate = await cryptoService.fetchExchangeRate();
+      setExchangeRate(currentLiveRate);
+
       const { updatedCoins, isLiveApi: liveStatus } = await cryptoService.fetchLiveTickers(
         coinsRef.current,
-        exchangeRateRef.current.rate
+        currentLiveRate.rate // 100% 실시간 기준 환율 적용
       );
       setCoins(updatedCoins);
       setIsLiveApi(liveStatus);
@@ -113,17 +133,92 @@ export default function App() {
     }
   }, [cryptoService, isRefreshing, highAlertThreshold, lowAlertThreshold]);
 
-  // Initial Load
-  useEffect(() => {
-    updateExchangeRate();
-    updateMarketData();
-  }, []);
+  const handleManualRefresh = useCallback(async () => {
+    await updateExchangeRate();
+    await updateMarketData();
+  }, [updateExchangeRate, updateMarketData]);
 
-  // Periodic Exchange Rate Refresh (Every 60s)
+  // Initial Load: Fetch dynamic KRW markets & subscribe to real-time Upbit WebSocket
+  useEffect(() => {
+    let disconnectWs: (() => void) | null = null;
+
+    const initData = async () => {
+      // 1. Fetch real-time exchange rate
+      const rateInfo = await cryptoService.fetchExchangeRate();
+      setExchangeRate(rateInfo);
+      exchangeRateRef.current = rateInfo;
+
+      // 2. Fetch all KRW markets dynamically from https://api.upbit.com/v1/market/all
+      const allMarkets = await cryptoService.fetchUpbitMarkets();
+      setCoins(allMarkets);
+      coinsRef.current = allMarkets;
+
+      // 3. Fetch initial full tickers for all KRW markets
+      const { updatedCoins, isLiveApi: liveStatus } = await cryptoService.fetchLiveTickers(
+        allMarkets,
+        rateInfo.rate
+      );
+      setCoins(updatedCoins);
+      coinsRef.current = updatedCoins;
+      setIsLiveApi(liveStatus);
+
+      // 4. Connect to Upbit Real-time WebSocket
+      const marketCodes = allMarkets.map((c) => c.upbitMarket);
+      disconnectWs = cryptoService.connectUpbitWebSocket(marketCodes, (wsData) => {
+        const currentRate = exchangeRateRef.current.rate;
+        setCoins((prevCoins) => {
+          let hasMatch = false;
+          const mapped = prevCoins.map((coin) => {
+            if (coin.upbitMarket === wsData.code) {
+              hasMatch = true;
+              const newUpbitPrice = wsData.trade_price;
+              const binanceKrwPrice = coin.binancePrice > 0 && currentRate > 0 ? coin.binancePrice * currentRate : 0;
+              const kimchiDiffPrice = binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
+              const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
+              const flashState: 'up' | 'down' | null = 
+                coin.upbitPrice > 0 ? (newUpbitPrice > coin.upbitPrice ? 'up' : newUpbitPrice < coin.upbitPrice ? 'down' : null) : null;
+
+              return {
+                ...coin,
+                prevUpbitPrice: coin.upbitPrice,
+                upbitPrice: newUpbitPrice,
+                upbitChangeRate: (wsData.signed_change_rate || 0) * 100,
+                upbitChangePrice: wsData.signed_change_price || 0,
+                upbitVolume24h: wsData.acc_trade_price_24h || coin.upbitVolume24h,
+                high52wPrice: wsData.highest_52_week_price || coin.high52wPrice,
+                low52wPrice: wsData.lowest_52_week_price || coin.low52wPrice,
+                high24hPrice: wsData.high_price || coin.high24hPrice,
+                low24hPrice: wsData.low_price || coin.low24hPrice,
+                binanceKrwPrice,
+                kimchiDiffPrice: Math.round(kimchiDiffPrice),
+                kimchiPremiumRate: Math.round(kimchiPremiumRate * 100) / 100,
+                lastUpdated: Date.now(),
+                flashState,
+              };
+            }
+            return coin;
+          });
+          if (hasMatch) {
+            coinsRef.current = mapped;
+            return mapped;
+          }
+          return prevCoins;
+        });
+      });
+    };
+
+    initData();
+
+    return () => {
+      if (disconnectWs) disconnectWs();
+    };
+  }, [cryptoService]);
+
+  // Periodic Exchange Rate Refresh (Real-time every 15s)
   useEffect(() => {
     const rateInterval = setInterval(() => {
       updateExchangeRate();
-    }, 60000);
+    }, 15000);
     return () => clearInterval(rateInterval);
   }, [updateExchangeRate]);
 
@@ -166,18 +261,13 @@ export default function App() {
     }
   };
 
-  // Average Kimchi Premium
-  const avgKimchi = coins.length > 0 
-    ? coins.reduce((acc, c) => acc + c.kimchiPremiumRate, 0) / coins.length 
-    : 0;
-
   const btcCoin = coins.find((c) => c.symbol === 'BTC');
   const btcKimchi = btcCoin ? btcCoin.kimchiPremiumRate : 0;
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col font-sans">
       
-      {/* 1. Header with InCoin identity, real-time exchange rate, and controls */}
+      {/* 1. Header with CoinOn identity, real-time exchange rate, and controls */}
       <Header
         exchangeRate={exchangeRate}
         colorTheme={colorTheme}
@@ -186,10 +276,9 @@ export default function App() {
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
         isAutoRefresh={isAutoRefresh}
         onToggleAutoRefresh={() => setIsAutoRefresh((prev) => !prev)}
-        onManualRefresh={updateMarketData}
+        onManualRefresh={handleManualRefresh}
         isRefreshing={isRefreshing}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        avgKimchi={avgKimchi}
         btcKimchi={btcKimchi}
         isLiveApi={isLiveApi}
       />
@@ -253,14 +342,7 @@ export default function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         exchangeRate={exchangeRate}
-        onUpdateExchangeRate={(rate, isManual) => {
-          setExchangeRate((prev) => ({
-            ...prev,
-            rate,
-            source: isManual ? '사용자 직접 지정' : '외환 실시간 기준율',
-            updatedAt: new Date().toLocaleTimeString('ko-KR'),
-          }));
-        }}
+        onRefreshExchangeRate={updateExchangeRate}
         colorTheme={colorTheme}
         onChangeColorTheme={setColorTheme}
         refreshInterval={refreshInterval}
