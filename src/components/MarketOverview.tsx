@@ -37,7 +37,7 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isCoinDropdownOpen, setIsCoinDropdownOpen] = useState<boolean>(false);
 
-  // Timeframe selector with LocalStorage persistence (Default: '15' for 15분 as in reference)
+  // Timeframe selector with LocalStorage persistence (Default: 'D' for "날")
   const [chartInterval, setChartInterval] = useState<string>(() => {
     try {
       const saved = localStorage.getItem('coinon_chart_interval');
@@ -47,7 +47,7 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({
     } catch {
       // ignore
     }
-    return '15';
+    return 'D';
   });
 
   const handleSelectInterval = (interval: string) => {
