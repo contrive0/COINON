@@ -9,9 +9,7 @@ import {
   Filter,
   Flame,
   TrendingDown,
-  Sparkles,
-  LineChart,
-  Wallet
+  Sparkles
 } from 'lucide-react';
 import { CoinData, ColorTheme, SortField, SortOrder, CategoryFilter } from '../types/crypto';
 import { 
@@ -389,10 +387,6 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                           </button>
                           <span className="font-semibold text-slate-400 truncate">
                             {coin.symbol}
-                          </span>
-                          <span className="inline-flex items-center space-x-0.5 text-slate-500 shrink-0">
-                            <LineChart className="w-2.5 h-2.5 text-slate-500" />
-                            <Wallet className="w-2.5 h-2.5 text-slate-500" />
                           </span>
                         </div>
                       </div>
