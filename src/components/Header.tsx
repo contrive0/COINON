@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ColorTheme, ExchangeRateInfo } from '../types/crypto';
 import { formatKrw, formatExchangeRate, formatPercent, getPriceChangeColor } from '../utils/formatters';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   exchangeRate: ExchangeRateInfo;
@@ -140,6 +141,9 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
             </button>
+
+            {/* PWA Install Button */}
+            <PWAInstallButton />
 
             {/* Settings button */}
             <button

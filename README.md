@@ -92,15 +92,56 @@
 
 ---
 
-## 4. 디렉토리 구조 (Directory Structure)
+## 4. PWA (Progressive Web App) 모바일 독립 앱 지원
+
+코인온 웹사이트는 스마트폰에서 홈 화면에 추가 시 브라우저 상단 주소창(URL bar)과 하단 툴바가 사라지고 **네이티브 모바일 앱과 완전히 동일한 독립 창(`standalone`)**으로 구동되도록 PWA 표준 사양이 완벽하게 구현되었습니다:
+
+### 1) 웹 앱 매니페스트 (`public/manifest.json`)
+- **`display: "standalone"`**: 스마트폰 홈 화면에서 실행 시 브라우저 URL 주소창 및 컨트롤러가 숨겨져 독립된 네이티브 앱 환경 제공.
+- **`start_url: "./"` 및 `scope: "./"`**: GitHub Pages 배포 경로(`https://contrive0.github.io/COINON/`) 및 로컬 개발 환경 모두에서 경로가 깨지지 않도록 상대 경로(`./`)를 정확히 준수.
+- **앱 식별자 & 이름**:
+  - `name`: "코인온 - 실시간 암호화폐 김치프리미엄"
+  - `short_name`: "코인온"
+  - `theme_color`: `#0f172a` (상단 시스템 상태바와 통일된 딥 네이비 슬레이트)
+  - `background_color`: `#0b0e14` (앱 시작 스플래시 화면 다크 배경)
+  - `orientation`: `portrait-primary` (모바일 세로 모드 최적화)
+- **아이콘 자산 (Icons)**:
+  - `./icon-192.png`: 192x192 표준 홈 화면 아이콘 (`purpose: any`)
+  - `./icon-512.png`: 512x512 고해상도 스플래시 화면 아이콘 (`purpose: any`)
+  - `./icon-maskable-512.png`: 안드로이드 원형/스쿼클 적응형 마스커블 아이콘 (`purpose: maskable`)
+  - `./icon.svg`: 무손실 벡터 아이콘
+
+### 2) 서비스 워커 (`public/service-worker.js`) & 캐싱 전략
+- **앱 셸(App Shell) 사전 캐싱**: `index.html`, `manifest.json`, 앱 아이콘 등 핵심 정적 에셋을 캐싱하여 네트워크가 불안정하거나 오프라인인 환경에서도 앱 셸이 즉각 실행됩니다.
+- **실시간 API & 웹소켓 우회 (Bypass Strategy)**:
+  - 실시간 시세가 생명인 코인 대시보드 특성에 맞춰 **업비트 API(`api.upbit.com`), 바이낸스 API(`api.binance.com`), 네이버 환율 API, 웹소켓(`wss://`) 요청은 서비스 워커 캐시 대상에서 엄격히 제외**하여 언제나 100% 실시간 최신 시세를 네트워크에서 직접 수신합니다.
+- **상대 경로 스코프 등록**: `index.html`에서 `navigator.serviceWorker.register('./service-worker.js', { scope: './' })`로 등록하여 서브디렉토리 배포 시에도 정상 작동합니다.
+
+### 3) 인앱 설치 안내 버튼 (`PWAInstallButton`) 및 iOS 사파리 가이드
+- **스마트 설치 감지 (`usePWAInstall`)**:
+  - 이미 홈 화면에 설치되어 `standalone` 모드로 실행 중인 경우 설치 버튼을 자동으로 숨김 처리.
+  - 안드로이드/크롬/엣지 환경: 브라우저 기본 설치 프롬프트(`beforeinstallprompt`)를 연동하여 원클릭 설치 지원.
+  - iOS 사파리 환경: 애플의 정책상 자바스크립트 직접 설치 API가 지원되지 않으므로, "공유(Share) 버튼 → '홈 화면에 추가'" 과정을 3단계로 친절하게 안내하는 전용 모달 창 팝업 제공.
+
+---
+
+## 5. 디렉토리 구조 (Directory Structure)
 
 ```
 coinon-dashboard/
-├── index.html                   # HTML 진입점 (다크 테마, 메타데이터, JSON-LD)
+├── index.html                   # HTML 진입점 (PWA 메타태그, manifest 연결, SW 등록)
+├── public/
+│   ├── manifest.json            # PWA 웹 앱 매니페스트 (display: standalone, 상대경로)
+│   ├── service-worker.js        # 정적 파일 캐시 및 실시간 API 우회 서비스 워커
+│   ├── icon.svg                 # SVG 고화질 벡터 아이콘
+│   ├── icon-192.png             # 192x192 PWA 아이콘
+│   ├── icon-512.png             # 512x512 PWA 고해상도 아이콘
+│   ├── icon-maskable-512.png    # 512x512 안드로이드 적응형 마스커블 아이콘
+│   └── apple-touch-icon.png     # iOS 홈 화면용 180x180 터치 아이콘
 ├── metadata.json                # 앱렛 식별 메타데이터
 ├── package.json                 # 프로젝트 의존성 설정
 ├── tsconfig.json                # TypeScript 컴파일러 설정
-├── vite.config.ts               # Vite 환경 설정
+├── vite.config.ts               # Vite 환경 설정 (base: '/COINON/')
 ├── README.md                    # 전체 프로젝트 상세 개발 및 현황 문서
 ├── src/
 │   ├── main.tsx                 # React 루트 렌더러
@@ -110,12 +151,15 @@ coinon-dashboard/
 │   │   └── crypto.ts            # CoinData, MacroIndicator, 필터, 정렬, 테마 타입 정의
 │   ├── services/
 │   │   └── cryptoService.ts     # 업비트/바이낸스/네이버 환율 API 및 매크로 지표 연산 엔진
+│   ├── hooks/
+│   │   └── usePWAInstall.ts     # PWA 설치 가능 여부 및 플랫폼별 설치 프롬프트 훅
 │   ├── components/
-│   │   ├── Header.tsx           # 상단 네비게이션, 환율 정보, 상태 인디케이터
-│   │   ├── MarketOverview.tsx   # 상단 4단 매크로 카드(코스피, BTC, 금, 원유), 트레이딩뷰 차트, 봉 주기 버튼(로컬스토리지 저장)
+│   │   ├── Header.tsx           # 상단 네비게이션, 환율 정보, PWA 설치 버튼, 설정
+│   │   ├── PWAInstallButton.tsx # 원클릭 앱 설치 및 iOS 사파리 홈 화면 추가 안내 모달
+│   │   ├── MarketOverview.tsx   # 상단 4단 매크로 카드(코스피, BTC, 금, 원유), 트레이딩뷰 차트
 │   │   ├── TradingViewChart.tsx # 트레이딩뷰 고화질 차트 임베드 컴포넌트
 │   │   ├── TradingViewScreener.tsx # 트레이딩뷰 크립토 스크리너 위젯 컴포넌트
-│   │   ├── CoinTable.tsx        # 필터 툴바([전체|★즐|메이저|김프|역프|거래대금]), 모바일 5컬럼 반응형 테이블
+│   │   ├── CoinTable.tsx        # 필터 툴바([전체|★즐|메이저|김프|역프|거래대금]), 모바일 5컬럼 테이블
 │   │   ├── CoinDetailModal.tsx  # 종목별 개별 차트, 김프 계산 상세 내역, 52주 게이지
 │   │   └── SettingsModal.tsx    # 수동 환율 설정, 색상 테마, 갱신 주기, 알림 임계치 설정
 │   └── utils/
@@ -125,7 +169,7 @@ coinon-dashboard/
 
 ---
 
-## 5. 실행 및 빌드 가이드 (Getting Started)
+## 6. 실행 및 빌드 가이드 (Getting Started)
 
 ```bash
 # 의존성 설치
@@ -143,9 +187,10 @@ npm run lint
 
 ---
 
-## 6. 광고 전면 배제 원칙 (Excluded Items)
+## 7. 광고 전면 배제 원칙 (Excluded Items)
 
 - ❌ 구글 애드센스, 쿠팡 파트너스, 외부 배너 광고 일체 없음
 - ❌ 화면을 가리는 팝업, 플로팅 배너, 스폰서 링크 배제
 - ❌ 추천인 코드(레퍼럴) 없는 공식 거래소 링크만 제공
 - ❌ 사용자 행동 추적 서드파티 스크립트 전면 배제
+
