@@ -58,7 +58,17 @@ export default function App() {
   const [sortField, setSortField] = useState<SortField>('upbitPrice');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>(() => {
+    try {
+      const saved = localStorage.getItem('coinon_category_filter') as CategoryFilter;
+      if (saved && ['all', 'favorites', 'major', 'positive', 'negative', 'high-volume'].includes(saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'all';
+  });
 
   // Modals
   const [selectedCoin, setSelectedCoin] = useState<CoinData | null>(null);
@@ -80,6 +90,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('incoin_favorites', JSON.stringify(favorites));
   }, [favorites]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('coinon_category_filter', categoryFilter);
+    } catch {
+      // ignore
+    }
+  }, [categoryFilter]);
 
   // Fetch Live Exchange Rate & Immediately Recalculate KRW for All Coins
   const updateExchangeRate = useCallback(async () => {
