@@ -256,10 +256,10 @@ export class CryptoService {
   }
 
   // Fetch all KRW markets dynamically from https://api.upbit.com/v1/market/all
-  public async fetchUpbitMarkets(): Promise<CoinData[]> {
+  public async fetchUpbitMarkets(existingCoins: CoinData[] = []): Promise<CoinData[]> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       const res = await fetch('https://api.upbit.com/v1/market/all', {
         signal: controller.signal,
         headers: { Accept: 'application/json' },
@@ -271,9 +271,30 @@ export class CryptoService {
         if (Array.isArray(data)) {
           const krwMarkets = data.filter((item: any) => item.market && item.market.startsWith('KRW-'));
           if (krwMarkets.length > 0) {
+            const existingMap = new Map<string, CoinData>();
+            existingCoins.forEach((c) => existingMap.set(c.upbitMarket, c));
+            INITIAL_COINS.forEach((c) => {
+              if (!existingMap.has(c.upbitMarket)) {
+                existingMap.set(c.upbitMarket, c);
+              }
+            });
+
             return krwMarkets.map((item: any) => {
               const symbol = item.market.replace('KRW-', '');
               const binanceSymbol = `${symbol}USDT`;
+              const existing = existingMap.get(item.market);
+
+              if (existing) {
+                return {
+                  ...existing,
+                  nameKo: item.korean_name || existing.nameKo,
+                  nameEn: item.english_name || existing.nameEn,
+                  upbitMarket: item.market,
+                  symbol,
+                  binanceSymbol,
+                };
+              }
+
               return {
                 symbol,
                 nameKo: item.korean_name,
@@ -303,9 +324,9 @@ export class CryptoService {
         }
       }
     } catch {
-      // Fallback to INITIAL_COINS if network request fails
+      // Fallback
     }
-    return INITIAL_COINS;
+    return existingCoins.length > 0 ? existingCoins : INITIAL_COINS;
   }
 
   // Connect to Upbit Real-time WebSocket (wss://api.upbit.com/websocket/v1)

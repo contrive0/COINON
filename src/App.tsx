@@ -36,7 +36,7 @@ export default function App() {
   const [isLiveApi, setIsLiveApi] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isAutoRefresh, setIsAutoRefresh] = useState<boolean>(true);
-  const [refreshInterval, setRefreshInterval] = useState<number>(2); // seconds
+  const [refreshInterval, setRefreshInterval] = useState<number>(15); // seconds (WebSocket provides millisecond-level live ticks)
 
   // Customization & Persistence
   const [colorTheme, setColorTheme] = useState<ColorTheme>(() => {
@@ -167,7 +167,7 @@ export default function App() {
       exchangeRateRef.current = rateInfo;
 
       // 2. Fetch all KRW markets dynamically from https://api.upbit.com/v1/market/all
-      const allMarkets = await cryptoService.fetchUpbitMarkets();
+      const allMarkets = await cryptoService.fetchUpbitMarkets(coinsRef.current);
       setCoins(allMarkets);
       coinsRef.current = allMarkets;
 
