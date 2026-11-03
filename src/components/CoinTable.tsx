@@ -9,7 +9,9 @@ import {
   Filter,
   Flame,
   TrendingDown,
-  Sparkles
+  Sparkles,
+  LineChart,
+  Wallet
 } from 'lucide-react';
 import { CoinData, ColorTheme, SortField, SortOrder, CategoryFilter } from '../types/crypto';
 import { 
@@ -142,88 +144,88 @@ export const CoinTable: React.FC<CoinTableProps> = ({
 
   return (
     <div className="w-full">
-      {/* Search and Category Filter Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+      {/* Search and Category Filter Toolbar (전체, ★ 즐, 메이저, 김프, 역프, 거래대금, 검색) */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mb-2.5">
         {/* Category Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
           <button
             onClick={() => onFilterChange('all')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`px-2.5 py-1.5 rounded font-medium whitespace-nowrap transition-colors ${
               categoryFilter === 'all'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-[#1e2533] text-white border border-slate-600 shadow-sm'
                 : 'bg-[#141a24] text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
-            전체 ({coins.length})
+            전체
           </button>
 
           <button
             onClick={() => onFilterChange('favorites')}
-            className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1 transition-colors ${
+            className={`px-2.5 py-1.5 rounded font-medium flex items-center gap-1 whitespace-nowrap transition-colors ${
               categoryFilter === 'favorites'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
                 : 'bg-[#141a24] text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
-            <Star className={`w-3.5 h-3.5 ${favorites.length > 0 ? 'fill-amber-400 text-amber-400' : ''}`} />
-            <span>즐겨찾기 ({favorites.length})</span>
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <span>즐</span>
           </button>
 
           <button
             onClick={() => onFilterChange('major')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`px-2.5 py-1.5 rounded font-medium whitespace-nowrap transition-colors ${
               categoryFilter === 'major'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white border border-indigo-500 shadow-sm'
                 : 'bg-[#141a24] text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
-            메이저 코인
+            메이저
           </button>
 
           <button
             onClick={() => onFilterChange('positive')}
-            className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1 transition-colors ${
+            className={`px-2.5 py-1.5 rounded font-medium flex items-center gap-1 whitespace-nowrap transition-colors ${
               categoryFilter === 'positive'
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 shadow-sm'
                 : 'bg-[#141a24] text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
             <Flame className="w-3 h-3 text-rose-400" />
-            <span>김프 양수</span>
+            <span>김프</span>
           </button>
 
           <button
             onClick={() => onFilterChange('negative')}
-            className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1 transition-colors ${
+            className={`px-2.5 py-1.5 rounded font-medium flex items-center gap-1 whitespace-nowrap transition-colors ${
               categoryFilter === 'negative'
-                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50 shadow-sm'
                 : 'bg-[#141a24] text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
             <TrendingDown className="w-3 h-3 text-blue-400" />
-            <span>역프 (할인)</span>
+            <span>역프</span>
           </button>
 
           <button
             onClick={() => onFilterChange('high-volume')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`px-2.5 py-1.5 rounded font-medium whitespace-nowrap transition-colors ${
               categoryFilter === 'high-volume'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white border border-indigo-500 shadow-sm'
                 : 'bg-[#141a24] text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
-            거래대금 1천억↑
+            거래대금
           </button>
         </div>
 
         {/* Search Input Box */}
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-64 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="코인명 / 심볼 검색 (예: BTC, 비트)"
+            placeholder="BTC, 암호화폐 검색"
             className="w-full bg-[#131822] border border-slate-800 rounded-lg pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
           />
           {searchQuery && (
@@ -238,18 +240,18 @@ export const CoinTable: React.FC<CoinTableProps> = ({
       </div>
 
       {/* Main Real-time Price Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-800/90 bg-[#0f141d] shadow-2xl">
-        <table className="w-full text-left border-collapse min-w-[880px]">
+      <div className="w-full overflow-x-auto rounded-xl border border-slate-800/90 bg-[#0f141d] shadow-2xl">
+        <table className="w-full text-left border-collapse table-fixed md:table-auto">
           <thead>
             <tr className="bg-[#141a24]/90 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none">
               
-              {/* 1. 코인이름 */}
+              {/* 1. 이름 */}
               <th 
                 onClick={() => onSort('symbol')}
-                className="py-3 px-3.5 cursor-pointer hover:text-slate-200 transition-colors w-[18%] sticky left-0 z-10 bg-[#141a24]"
+                className="py-2.5 sm:py-3 px-1.5 sm:px-2 md:px-3 cursor-pointer hover:text-slate-200 transition-colors w-[26%] sm:w-[22%] md:w-[18%]"
               >
                 <div className="flex items-center group">
-                  <span>코인이름</span>
+                  <span>이름</span>
                   {renderSortIndicator('symbol')}
                 </div>
               </th>
@@ -257,10 +259,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 2. 현재가 */}
               <th 
                 onClick={() => onSort('upbitPrice')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[15%]"
+                className="py-2.5 sm:py-3 px-1.5 sm:px-2 md:px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[24%] sm:w-[22%] md:w-[16%]"
               >
                 <div className="flex items-center justify-end group">
-                  <span>현재가 (업비트 / 바이낸스)</span>
+                  <span>현재가</span>
                   {renderSortIndicator('upbitPrice')}
                 </div>
               </th>
@@ -268,10 +270,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 3. 김프 */}
               <th 
                 onClick={() => onSort('kimchiPremiumRate')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[13%]"
+                className="py-2.5 sm:py-3 px-1 sm:px-2 md:px-2.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[16%] sm:w-[15%] md:w-[13%]"
               >
                 <div className="flex items-center justify-end group">
-                  <span>김프 (비율 / 차액)</span>
+                  <span>김프</span>
                   {renderSortIndicator('kimchiPremiumRate')}
                 </div>
               </th>
@@ -279,7 +281,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 4. 전일대비 */}
               <th 
                 onClick={() => onSort('upbitChangeRate')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[13%]"
+                className="py-2.5 sm:py-3 px-1 sm:px-2 md:px-2.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[17%] sm:w-[15%] md:w-[13%]"
               >
                 <div className="flex items-center justify-end group">
                   <span>전일대비</span>
@@ -287,24 +289,24 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                 </div>
               </th>
 
-              {/* 5. 고가대비(52주) */}
+              {/* 5. 고가대비(52주) - Desktop only */}
               <th 
                 onClick={() => onSort('high52wDiffRate')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[13%]"
+                className="hidden md:table-cell py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[12%]"
               >
                 <div className="flex items-center justify-end group">
-                  <span>고가대비 (52주)</span>
+                  <span>고가대비(52주)</span>
                   {renderSortIndicator('high52wDiffRate')}
                 </div>
               </th>
 
-              {/* 6. 저가대비(52주) */}
+              {/* 6. 저가대비(52주) - Desktop only */}
               <th 
                 onClick={() => onSort('low52wDiffRate')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[13%]"
+                className="hidden md:table-cell py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[12%]"
               >
                 <div className="flex items-center justify-end group">
-                  <span>저가대비 (52주)</span>
+                  <span>저가대비(52주)</span>
                   {renderSortIndicator('low52wDiffRate')}
                 </div>
               </th>
@@ -312,10 +314,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 7. 거래액(일) */}
               <th 
                 onClick={() => onSort('upbitVolume24h')}
-                className="py-3 px-3.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[15%]"
+                className="py-2.5 sm:py-3 px-1.5 sm:px-2 md:px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[17%] sm:w-[16%] md:w-[16%]"
               >
                 <div className="flex items-center justify-end group">
-                  <span>거래액(24H)</span>
+                  <span>거래액(일)</span>
                   {renderSortIndicator('upbitVolume24h')}
                 </div>
               </th>
@@ -335,7 +337,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                 </td>
               </tr>
             ) : (
-              filteredCoins.map((coin, index) => {
+              filteredCoins.map((coin) => {
                 const isFavorite = favorites.includes(coin.symbol);
                 const flashClass = 
                   coin.flashState === 'up' 
@@ -344,6 +346,11 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     ? 'flash-down' 
                     : '';
 
+                // Calculate Binance KRW volume matching screenshot
+                const binanceKrwVolume = coin.binancePrice > 0 && coin.binanceKrwPrice
+                  ? coin.binanceVolume24h * (coin.binanceKrwPrice / coin.binancePrice)
+                  : (coin.binanceVolume24h || 0) * 1442.5;
+
                 return (
                   <tr
                     key={coin.symbol}
@@ -351,71 +358,76 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     className={`hover:bg-[#151c27] transition-colors cursor-pointer group ${flashClass}`}
                   >
                     
-                    {/* 1. 코인이름 (Sticky left column) */}
-                    <td className="py-2.5 px-3.5 font-sans sticky left-0 z-10 bg-[#0f141d] group-hover:bg-[#151c27] transition-colors border-r border-slate-800/40">
-                      <div className="flex items-center space-x-2.5">
-                        <button
-                          onClick={(e) => onToggleFavorite(coin.symbol, e)}
-                          className="p-1 rounded text-slate-600 hover:text-amber-400 transition-colors focus:outline-none"
-                          title={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-                        >
-                          <Star 
-                            className={`w-3.5 h-3.5 ${
-                              isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-600 hover:text-slate-400'
-                            }`} 
+                    {/* 1. 코인이름: 1행(아이콘 + 한글명), 2행(별 + 심볼(BTC) + 미니차트/지갑) */}
+                    <td className="py-2 sm:py-2.5 px-1.5 sm:px-2 md:px-3 font-sans truncate">
+                      <div className="flex flex-col min-w-0">
+                        {/* 1행: 코인 아이콘 + 한글명 (예: 🟠 비트코인) */}
+                        <div className="flex items-center space-x-1 sm:space-x-1.5 min-w-0">
+                          <img 
+                            src={`https://static.upbit.com/logos/${coin.symbol}.png`}
+                            alt={coin.symbol}
+                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full shrink-0 object-contain"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                           />
-                        </button>
+                          <span className="font-bold text-slate-100 group-hover:text-indigo-300 transition-colors truncate text-[11px] sm:text-xs">
+                            {coin.nameKo}
+                          </span>
+                        </div>
 
-                        <div className="flex flex-col min-w-0">
-                          {/* Row 1: Korean Name & Symbol */}
-                          <div className="flex items-center space-x-1.5">
-                            <span className="font-bold text-slate-100 group-hover:text-indigo-300 transition-colors truncate">
-                              {coin.nameKo}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-400">
-                              {coin.symbol}
-                            </span>
-                          </div>
-                          {/* Row 2: English Name */}
-                          <div className="text-[10px] text-slate-400 truncate">
-                            {coin.nameEn}
-                          </div>
+                        {/* 2행: 즐겨찾기(별) + 심볼(BTC) + 미니 차트/지갑 아이콘 */}
+                        <div className="flex items-center space-x-1 text-[10px] text-slate-400 mt-0.5 min-w-0">
+                          <button
+                            onClick={(e) => onToggleFavorite(coin.symbol, e)}
+                            className="p-0.5 -ml-0.5 rounded text-slate-600 hover:text-amber-400 transition-colors focus:outline-none shrink-0"
+                            title={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                          >
+                            <Star 
+                              className={`w-3 h-3 ${
+                                isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-600 hover:text-slate-400'
+                              }`} 
+                            />
+                          </button>
+                          <span className="font-semibold text-slate-400 truncate">
+                            {coin.symbol}
+                          </span>
+                          <span className="inline-flex items-center space-x-0.5 text-slate-500 shrink-0">
+                            <LineChart className="w-2.5 h-2.5 text-slate-500" />
+                            <Wallet className="w-2.5 h-2.5 text-slate-500" />
+                          </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* 2. 현재가 (2-Row: Upbit KRW / Binance USD) */}
-                    <td className="py-2.5 px-3 text-right">
+                    {/* 2. 현재가: 1행(업비트 현재가), 2행(해외 환산가) */}
+                    <td className="py-2 sm:py-2.5 px-1.5 sm:px-2 md:px-3 text-right">
                       <div className="flex flex-col items-end">
-                        {/* Row 1: Upbit Price */}
-                        <div className="font-bold text-slate-100">
-                          ₩{formatKrw(coin.upbitPrice)}
+                        {/* 1행: 업비트 현재가 */}
+                        <div className="font-bold text-slate-100 text-[11px] sm:text-xs">
+                          {formatKrw(coin.upbitPrice)}
                         </div>
-                        {/* Row 2: Binance USD Price & Converted KRW */}
-                        <div className="text-[11px] text-slate-400">
+                        {/* 2행: 해외 환산가 */}
+                        <div className="text-[10px] sm:text-[11px] text-slate-400">
                           {coin.binancePrice > 0 ? (
-                            <span>
-                              {formatUsd(coin.binancePrice)}(₩{formatKrw(coin.binanceKrwPrice)})
-                            </span>
+                            <span>{formatKrw(coin.binanceKrwPrice)}</span>
                           ) : (
-                            <span className="text-slate-500">바이낸스 미지원</span>
+                            <span className="text-slate-500">-</span>
                           )}
                         </div>
                       </div>
                     </td>
 
-                    {/* 3. 김프 (2-Row: Kimp % / Diff KRW) */}
-                    <td className="py-2.5 px-3 text-right">
+                    {/* 3. 김프: 1행(김프 %), 2행(차액) */}
+                    <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-2.5 text-right">
                       <div className="flex flex-col items-end">
                         {coin.binancePrice > 0 ? (
                           <>
-                            {/* Row 1: Kimp % */}
-                            <div className={`font-bold text-sm ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)}`}>
+                            {/* 1행: 김프 % */}
+                            <div className={`font-bold text-[11px] sm:text-xs ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)}`}>
                               {formatPercent(coin.kimchiPremiumRate)}
                             </div>
-                            {/* Row 2: Kimp Diff KRW */}
-                            <div className={`text-[11px] ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)} opacity-90`}>
-                              {coin.kimchiDiffPrice > 0 ? '+' : ''}₩{formatKrw(coin.kimchiDiffPrice)}
+                            {/* 2행: 차액 */}
+                            <div className={`text-[10px] sm:text-[11px] ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)} opacity-90`}>
+                              {formatKrw(coin.kimchiDiffPrice)}
                             </div>
                           </>
                         ) : (
@@ -424,58 +436,54 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                       </div>
                     </td>
 
-                    {/* 4. 전일대비 (2-Row: Change % / Change KRW) */}
-                    <td className="py-2.5 px-3 text-right">
+                    {/* 4. 전일대비: 1행(등락률 %), 2행(변동금액) */}
+                    <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-2.5 text-right">
                       <div className="flex flex-col items-end">
-                        {/* Row 1: Change % */}
-                        <div className={`font-bold ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)}`}>
+                        {/* 1행: 등락률 % */}
+                        <div className={`font-bold text-[11px] sm:text-xs ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)}`}>
                           {formatPercent(coin.upbitChangeRate)}
                         </div>
-                        {/* Row 2: Change KRW */}
-                        <div className={`text-[11px] ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)} opacity-90`}>
-                          {coin.upbitChangePrice > 0 ? '+' : ''}₩{formatKrw(coin.upbitChangePrice)}
+                        {/* 2행: 변동금액 */}
+                        <div className={`text-[10px] sm:text-[11px] ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)} opacity-90`}>
+                          {coin.upbitChangePrice > 0 ? '+' : ''}{formatKrw(coin.upbitChangePrice)}
                         </div>
                       </div>
                     </td>
 
-                    {/* 5. 고가대비(52주) (2-Row: High Diff % / 52w High Price) */}
-                    <td className="py-2.5 px-3 text-right">
+                    {/* 5. 고가대비(52주) - Desktop only */}
+                    <td className="hidden md:table-cell py-2.5 px-3 text-right">
                       <div className="flex flex-col items-end">
-                        {/* Row 1: High Diff % */}
                         <div className="text-slate-300 font-medium">
                           {formatPercent(coin.high52wDiffRate)}
                         </div>
-                        {/* Row 2: 52w High Price */}
                         <div className="text-[11px] text-slate-400">
-                          ₩{formatKrw(coin.high52wPrice)}
+                          {formatKrw(coin.high52wPrice)}
                         </div>
                       </div>
                     </td>
 
-                    {/* 6. 저가대비(52주) (2-Row: Low Diff % / 52w Low Price) */}
-                    <td className="py-2.5 px-3 text-right">
+                    {/* 6. 저가대비(52주) - Desktop only */}
+                    <td className="hidden md:table-cell py-2.5 px-3 text-right">
                       <div className="flex flex-col items-end">
-                        {/* Row 1: Low Diff % */}
                         <div className="text-slate-300 font-medium">
                           {formatPercent(coin.low52wDiffRate)}
                         </div>
-                        {/* Row 2: 52w Low Price */}
                         <div className="text-[11px] text-slate-400">
-                          ₩{formatKrw(coin.low52wPrice)}
+                          {formatKrw(coin.low52wPrice)}
                         </div>
                       </div>
                     </td>
 
-                    {/* 7. 거래액(일) (2-Row: Upbit Vol / Binance Vol) */}
-                    <td className="py-2.5 px-3.5 text-right">
+                    {/* 7. 거래액(일): 1행(업비트 일거래액), 2행(해외 일거래액 환산) */}
+                    <td className="py-2 sm:py-2.5 px-1.5 sm:px-2 md:px-3 text-right">
                       <div className="flex flex-col items-end">
-                        {/* Row 1: Upbit KRW Volume */}
-                        <div className="font-bold text-slate-200">
+                        {/* 1행: 업비트 일 거래대금 */}
+                        <div className="font-bold text-slate-200 text-[11px] sm:text-xs">
                           {formatTradeVolume(coin.upbitVolume24h)}
                         </div>
-                        {/* Row 2: Binance USD Volume */}
-                        <div className="text-[11px] text-slate-400">
-                          {formatUsdVolume(coin.binanceVolume24h)}
+                        {/* 2행: 바이낸스 일 거래대금 (원화 환산) */}
+                        <div className="text-[10px] sm:text-[11px] text-slate-400">
+                          {coin.binancePrice > 0 ? formatTradeVolume(binanceKrwVolume) : '-'}
                         </div>
                       </div>
                     </td>

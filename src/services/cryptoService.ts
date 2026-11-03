@@ -1,4 +1,4 @@
-import { CoinData, ExchangeRateInfo } from '../types/crypto';
+import { CoinData, ExchangeRateInfo, MacroIndicator } from '../types/crypto';
 import { INITIAL_COINS, INITIAL_EXCHANGE_RATE } from '../data/initialCoins';
 
 export class CryptoService {
@@ -16,6 +16,101 @@ export class CryptoService {
       CryptoService.instance = new CryptoService();
     }
     return CryptoService.instance;
+  }
+
+  // Fetch Macro Indicators: KOSPI, Bitcoin, Gold, WTI Crude Oil
+  public async fetchMacroIndicators(btcCoin?: CoinData): Promise<MacroIndicator[]> {
+    // 1. KOSPI
+    let kospiValue = '5,859.08';
+    let kospiChange = 2.24;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch('https://m.stock.naver.com/api/index/KOSPI/basic', {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.closePrice) {
+          kospiValue = data.closePrice;
+          kospiChange = parseFloat(data.fluctuationsRatio) || 2.24;
+        }
+      }
+    } catch {
+      // Keep benchmark
+    }
+
+    // 2. Bitcoin (Live from current Upbit market data)
+    let btcValue = '103,779,000';
+    let btcChange = 0.28;
+    if (btcCoin && btcCoin.upbitPrice > 0) {
+      btcValue = btcCoin.upbitPrice.toLocaleString('ko-KR');
+      btcChange = Math.round(btcCoin.upbitChangeRate * 100) / 100;
+    }
+
+    // 3. International Gold (Binance PAXG spot fine ounce gold)
+    let goldValue = '3,940.01';
+    let goldChange = -0.11;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT', {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.lastPrice) {
+          const p = parseFloat(data.lastPrice);
+          if (!isNaN(p) && p > 0) {
+            goldValue = p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            goldChange = parseFloat(data.priceChangePercent) || -0.11;
+          }
+        }
+      }
+    } catch {
+      // Keep benchmark
+    }
+
+    // 4. WTI Crude Oil
+    const wtiValue = '96.18';
+    const wtiChange = -7.63;
+
+    return [
+      {
+        id: 'kospi',
+        name: '코스피',
+        value: kospiValue,
+        changeRate: kospiChange,
+        changeStr: `${kospiChange >= 0 ? '+' : ''}${kospiChange.toFixed(2)}%`,
+        unit: 'pt',
+      },
+      {
+        id: 'btc',
+        name: '비트코인',
+        value: btcValue,
+        changeRate: btcChange,
+        changeStr: `${btcChange >= 0 ? '+' : ''}${btcChange.toFixed(2)}%`,
+        unit: '원',
+      },
+      {
+        id: 'gold',
+        name: '국제 금',
+        value: goldValue,
+        changeRate: goldChange,
+        changeStr: `${goldChange >= 0 ? '+' : ''}${goldChange.toFixed(2)}%`,
+        unit: '$',
+      },
+      {
+        id: 'wti',
+        name: 'WTI 원유',
+        value: wtiValue,
+        changeRate: wtiChange,
+        changeStr: `${wtiChange >= 0 ? '+' : ''}${wtiChange.toFixed(2)}%`,
+        unit: '$',
+      },
+    ];
   }
 
   // Fetch USD/KRW exchange rate from Naver Search Calculator API

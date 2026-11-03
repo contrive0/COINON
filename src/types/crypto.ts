@@ -66,3 +66,12 @@ export interface ExchangeRateInfo {
   source: string;
   updatedAt: string;
 }
+
+export interface MacroIndicator {
+  id: string;
+  name: string;        // "코스피", "비트코인", "국제 금", "WTI 원유"
+  value: string;       // "5,859.08", "103,779,000", "3,940.01", "96.18"
+  changeRate: number;  // 2.24, 0.28, -0.11, -7.63
+  changeStr: string;   // "+2.24%", "+0.28%", "-0.11%", "-7.63%"
+  unit?: string;       // pt, 원, $, $
+}

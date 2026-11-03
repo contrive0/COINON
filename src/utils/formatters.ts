@@ -34,18 +34,19 @@ export function formatUsd(price: number): string {
   }
 }
 
-// Format Volume (억원 / 조원 / $B / $M)
 export function formatTradeVolume(krwVolume: number): string {
   if (!krwVolume || isNaN(krwVolume)) return '0억';
   const trillion = 1000000000000;
   const hundredMillion = 100000000;
 
   if (krwVolume >= trillion) {
-    return (krwVolume / trillion).toFixed(1) + '조';
+    const tr = Math.floor(krwVolume / trillion);
+    const rem = Math.round((krwVolume % trillion) / hundredMillion);
+    return rem > 0 ? `${tr}조 ${rem.toLocaleString('ko-KR')}억` : `${tr}조`;
   } else if (krwVolume >= hundredMillion) {
     return Math.round(krwVolume / hundredMillion).toLocaleString('ko-KR') + '억';
   } else {
-    return (krwVolume / 10000).toLocaleString('ko-KR') + '만';
+    return Math.round(krwVolume / 10000).toLocaleString('ko-KR') + '만';
   }
 }
 
