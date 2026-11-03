@@ -332,7 +332,7 @@ export default function App() {
           <div className="flex items-center space-x-2">
             <span className="font-bold text-slate-300">코인온 (CoinOn)</span>
             <span>·</span>
-            <span>광고 없는 실시간 암호화폐 김치 프리미엄 대시보드</span>
+            <span></span>
           </div>
 
           <div className="flex items-center space-x-4 text-[11px] text-slate-400">
