@@ -104,9 +104,12 @@ export default function App() {
     const rateInfo = await cryptoService.fetchExchangeRate();
     setExchangeRate(rateInfo);
     
-    // 실시간 환율을 반영하여 모든 코인의 환산 원화가 및 김프 즉시 재계산
+    // 실시간 환율을 반영하여 데이터가 수신된 코인의 환산 원화가 및 김프 즉시 재계산
     setCoins((prevCoins) =>
       prevCoins.map((coin) => {
+        if (!coin.hasUpbitData || !coin.hasBinanceData || coin.binancePrice <= 0) {
+          return coin;
+        }
         const binanceKrwPrice = coin.binancePrice * rateInfo.rate;
         const kimchiDiffPrice = coin.upbitPrice - binanceKrwPrice;
         const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
@@ -190,14 +193,17 @@ export default function App() {
             if (coin.upbitMarket === wsData.code) {
               hasMatch = true;
               const newUpbitPrice = wsData.trade_price;
-              const binanceKrwPrice = coin.binancePrice > 0 && currentRate > 0 ? coin.binancePrice * currentRate : 0;
-              const kimchiDiffPrice = binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
-              const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
+              const hasUpbit = true;
+              const hasBinance = !!coin.hasBinanceData && coin.binancePrice > 0;
+              const binanceKrwPrice = hasBinance && currentRate > 0 ? coin.binancePrice * currentRate : 0;
+              const kimchiDiffPrice = hasUpbit && hasBinance && binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
+              const kimchiPremiumRate = hasUpbit && hasBinance && binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
               const flashState: 'up' | 'down' | null = 
-                coin.upbitPrice > 0 ? (newUpbitPrice > coin.upbitPrice ? 'up' : newUpbitPrice < coin.upbitPrice ? 'down' : null) : null;
+                coin.hasUpbitData && coin.upbitPrice > 0 ? (newUpbitPrice > coin.upbitPrice ? 'up' : newUpbitPrice < coin.upbitPrice ? 'down' : null) : null;
 
               return {
                 ...coin,
+                hasUpbitData: true,
                 prevUpbitPrice: coin.upbitPrice,
                 upbitPrice: newUpbitPrice,
                 upbitChangeRate: (wsData.signed_change_rate || 0) * 100,

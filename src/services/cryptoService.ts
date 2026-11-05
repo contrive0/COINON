@@ -301,6 +301,8 @@ export class CryptoService {
                 nameEn: item.english_name,
                 upbitMarket: item.market,
                 binanceSymbol,
+                hasUpbitData: false,
+                hasBinanceData: false,
                 upbitPrice: 0,
                 upbitChangeRate: 0,
                 upbitChangePrice: 0,
@@ -317,7 +319,7 @@ export class CryptoService {
                 low52wDiffRate: 0,
                 high24hPrice: 0,
                 low24hPrice: 0,
-                lastUpdated: Date.now(),
+                lastUpdated: 0,
               };
             });
           }
@@ -508,12 +510,16 @@ export class CryptoService {
         const upbit = upbitMap.get(coin.upbitMarket);
         const binance = binanceMap.get(coin.binanceSymbol);
 
-        const newUpbitPrice = upbit ? upbit.trade_price : coin.upbitPrice;
-        const newBinancePrice = binance ? parseFloat(binance.lastPrice) : coin.binancePrice;
+        const hasUpbit = coin.hasUpbitData || !!upbit;
+        const binanceLastPrice = binance ? parseFloat(binance.lastPrice) : 0;
+        const hasBinance = coin.hasBinanceData || (binanceLastPrice > 0);
 
-        const binanceKrwPrice = newBinancePrice > 0 && exchangeRate > 0 ? newBinancePrice * exchangeRate : 0;
-        const kimchiDiffPrice = binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
-        const kimchiPremiumRate = binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
+        const newUpbitPrice = upbit ? upbit.trade_price : coin.upbitPrice;
+        const newBinancePrice = binanceLastPrice > 0 ? binanceLastPrice : coin.binancePrice;
+
+        const binanceKrwPrice = hasBinance && newBinancePrice > 0 && exchangeRate > 0 ? newBinancePrice * exchangeRate : 0;
+        const kimchiDiffPrice = hasUpbit && hasBinance && binanceKrwPrice > 0 ? newUpbitPrice - binanceKrwPrice : 0;
+        const kimchiPremiumRate = hasUpbit && hasBinance && binanceKrwPrice > 0 ? (kimchiDiffPrice / binanceKrwPrice) * 100 : 0;
 
         const high52 = upbit?.highest_52_week_price || coin.high52wPrice;
         const low52 = upbit?.lowest_52_week_price || coin.low52wPrice;
@@ -525,6 +531,8 @@ export class CryptoService {
 
         return {
           ...coin,
+          hasUpbitData: hasUpbit,
+          hasBinanceData: hasBinance,
           prevUpbitPrice: coin.upbitPrice,
           upbitPrice: newUpbitPrice,
           upbitChangeRate: upbit ? (upbit.signed_change_rate || 0) * 100 : coin.upbitChangeRate,
@@ -563,7 +571,7 @@ export class CryptoService {
   // Realistic simulation tick for fallback
   public simulateMarketTick(coins: CoinData[], exchangeRate: number): CoinData[] {
     return coins.map((coin) => {
-      if (coin.upbitPrice === 0) return coin;
+      if (!coin.hasUpbitData || coin.upbitPrice === 0) return coin;
       const willMove = Math.random() < 0.35;
       if (!willMove) {
         return { ...coin, flashState: null };

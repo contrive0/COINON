@@ -33,6 +33,10 @@ export interface CoinData {
   high24hPrice: number;
   low24hPrice: number;
   
+  // Data Arrival Flags
+  hasUpbitData?: boolean;
+  hasBinanceData?: boolean;
+
   // UI state
   lastUpdated: number;
   flashState?: 'up' | 'down' | null;

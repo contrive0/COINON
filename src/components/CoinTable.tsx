@@ -73,11 +73,11 @@ export const CoinTable: React.FC<CoinTableProps> = ({
       const majors = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'SUI'];
       result = result.filter((c) => majors.includes(c.symbol));
     } else if (categoryFilter === 'positive') {
-      result = result.filter((c) => c.kimchiPremiumRate > 0);
+      result = result.filter((c) => !!c.hasUpbitData && !!c.hasBinanceData && c.kimchiPremiumRate > 0);
     } else if (categoryFilter === 'negative') {
-      result = result.filter((c) => c.kimchiPremiumRate < 0);
+      result = result.filter((c) => !!c.hasUpbitData && !!c.hasBinanceData && c.kimchiPremiumRate < 0);
     } else if (categoryFilter === 'high-volume') {
-      result = result.filter((c) => c.upbitVolume24h >= 100000000000); // 1,000억원 이상
+      result = result.filter((c) => !!c.hasUpbitData && c.upbitVolume24h >= 100000000000); // 1,000억원 이상
     }
 
     // Sorting
@@ -91,32 +91,32 @@ export const CoinTable: React.FC<CoinTableProps> = ({
           valB = b.symbol;
           break;
         case 'upbitPrice':
-          valA = a.upbitPrice;
-          valB = b.upbitPrice;
+          valA = a.hasUpbitData ? a.upbitPrice : -1;
+          valB = b.hasUpbitData ? b.upbitPrice : -1;
           break;
         case 'kimchiPremiumRate':
-          valA = a.kimchiPremiumRate;
-          valB = b.kimchiPremiumRate;
+          valA = (a.hasUpbitData && a.hasBinanceData) ? a.kimchiPremiumRate : -999999;
+          valB = (b.hasUpbitData && b.hasBinanceData) ? b.kimchiPremiumRate : -999999;
           break;
         case 'upbitChangeRate':
-          valA = a.upbitChangeRate;
-          valB = b.upbitChangeRate;
+          valA = a.hasUpbitData ? a.upbitChangeRate : -999999;
+          valB = b.hasUpbitData ? b.upbitChangeRate : -999999;
           break;
         case 'high52wDiffRate':
-          valA = a.high52wDiffRate;
-          valB = b.high52wDiffRate;
+          valA = a.hasUpbitData ? a.high52wDiffRate : -999999;
+          valB = b.hasUpbitData ? b.high52wDiffRate : -999999;
           break;
         case 'low52wDiffRate':
-          valA = a.low52wDiffRate;
-          valB = b.low52wDiffRate;
+          valA = a.hasUpbitData ? a.low52wDiffRate : -999999;
+          valB = b.hasUpbitData ? b.low52wDiffRate : -999999;
           break;
         case 'upbitVolume24h':
-          valA = a.upbitVolume24h;
-          valB = b.upbitVolume24h;
+          valA = a.hasUpbitData ? a.upbitVolume24h : -1;
+          valB = b.hasUpbitData ? b.upbitVolume24h : -1;
           break;
         default:
-          valA = a.kimchiPremiumRate;
-          valB = b.kimchiPremiumRate;
+          valA = (a.hasUpbitData && a.hasBinanceData) ? a.kimchiPremiumRate : -999999;
+          valB = (b.hasUpbitData && b.hasBinanceData) ? b.kimchiPremiumRate : -999999;
       }
 
       if (typeof valA === 'string' && typeof valB === 'string') {
@@ -397,11 +397,15 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                       <div className="flex flex-col items-end">
                         {/* 1행: 업비트 현재가 */}
                         <div className="font-bold text-slate-100 text-[11px] sm:text-xs">
-                          {formatKrw(coin.upbitPrice)}
+                          {coin.hasUpbitData && coin.upbitPrice > 0 ? (
+                            formatKrw(coin.upbitPrice)
+                          ) : (
+                            <span className="text-slate-500 font-normal">-</span>
+                          )}
                         </div>
                         {/* 2행: 해외 환산가 */}
                         <div className="text-[10px] sm:text-[11px] text-slate-400">
-                          {coin.binancePrice > 0 ? (
+                          {coin.hasBinanceData && coin.binancePrice > 0 && coin.binanceKrwPrice > 0 ? (
                             <span>{formatKrw(coin.binanceKrwPrice)}</span>
                           ) : (
                             <span className="text-slate-500">-</span>
@@ -413,7 +417,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     {/* 3. 김프: 1행(김프 %), 2행(차액) */}
                     <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-2.5 text-right">
                       <div className="flex flex-col items-end">
-                        {coin.binancePrice > 0 ? (
+                        {coin.hasUpbitData && coin.hasBinanceData && coin.binancePrice > 0 ? (
                           <>
                             {/* 1행: 김프 % */}
                             <div className={`font-bold text-[11px] sm:text-xs ${getKimchiColor(coin.kimchiPremiumRate, colorTheme)}`}>
@@ -425,7 +429,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                             </div>
                           </>
                         ) : (
-                          <div className="text-slate-500 text-xs">-</div>
+                          <>
+                            <div className="text-slate-500 text-xs">-</div>
+                            <div className="text-slate-500 text-[10px] sm:text-[11px]">-</div>
+                          </>
                         )}
                       </div>
                     </td>
@@ -433,38 +440,65 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     {/* 4. 전일대비: 1행(등락률 %), 2행(변동금액) */}
                     <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-2.5 text-right">
                       <div className="flex flex-col items-end">
-                        {/* 1행: 등락률 % */}
-                        <div className={`font-bold text-[11px] sm:text-xs ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)}`}>
-                          {formatPercent(coin.upbitChangeRate)}
-                        </div>
-                        {/* 2행: 변동금액 */}
-                        <div className={`text-[10px] sm:text-[11px] ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)} opacity-90`}>
-                          {coin.upbitChangePrice > 0 ? '+' : ''}{formatKrw(coin.upbitChangePrice)}
-                        </div>
+                        {coin.hasUpbitData ? (
+                          <>
+                            {/* 1행: 등락률 % */}
+                            <div className={`font-bold text-[11px] sm:text-xs ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)}`}>
+                              {formatPercent(coin.upbitChangeRate)}
+                            </div>
+                            {/* 2행: 변동금액 */}
+                            <div className={`text-[10px] sm:text-[11px] ${getPriceChangeColor(coin.upbitChangeRate, colorTheme)} opacity-90`}>
+                              {coin.upbitChangePrice > 0 ? '+' : ''}{formatKrw(coin.upbitChangePrice)}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-slate-500 text-xs">-</div>
+                            <div className="text-slate-500 text-[10px] sm:text-[11px]">-</div>
+                          </>
+                        )}
                       </div>
                     </td>
 
                     {/* 5. 고가대비(52주) - Desktop only */}
                     <td className="hidden md:table-cell py-2.5 px-3 text-right">
                       <div className="flex flex-col items-end">
-                        <div className="text-slate-300 font-medium">
-                          {formatPercent(coin.high52wDiffRate)}
-                        </div>
-                        <div className="text-[11px] text-slate-400">
-                          {formatKrw(coin.high52wPrice)}
-                        </div>
+                        {coin.hasUpbitData && coin.high52wPrice > 0 ? (
+                          <>
+                            <div className="text-slate-300 font-medium">
+                              {formatPercent(coin.high52wDiffRate)}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              {formatKrw(coin.high52wPrice)}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-slate-500 text-xs">-</div>
+                            <div className="text-slate-500 text-[11px]">-</div>
+                          </>
+                        )}
                       </div>
                     </td>
 
                     {/* 6. 저가대비(52주) - Desktop only */}
                     <td className="hidden md:table-cell py-2.5 px-3 text-right">
                       <div className="flex flex-col items-end">
-                        <div className="text-slate-300 font-medium">
-                          {formatPercent(coin.low52wDiffRate)}
-                        </div>
-                        <div className="text-[11px] text-slate-400">
-                          {formatKrw(coin.low52wPrice)}
-                        </div>
+                        {coin.hasUpbitData && coin.low52wPrice > 0 ? (
+                          <>
+                            <div className="text-slate-300 font-medium">
+                              {formatPercent(coin.low52wDiffRate)}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              {formatKrw(coin.low52wPrice)}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-slate-500 text-xs">-</div>
+                            <div className="text-slate-500 text-[11px]">-</div>
+                          </>
+                        )}
                       </div>
                     </td>
 
@@ -473,11 +507,19 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                       <div className="flex flex-col items-end">
                         {/* 1행: 업비트 일 거래대금 */}
                         <div className="font-bold text-slate-200 text-[11px] sm:text-xs">
-                          {formatTradeVolume(coin.upbitVolume24h)}
+                          {coin.hasUpbitData && coin.upbitVolume24h > 0 ? (
+                            formatTradeVolume(coin.upbitVolume24h)
+                          ) : (
+                            <span className="text-slate-500 font-normal">-</span>
+                          )}
                         </div>
                         {/* 2행: 바이낸스 일 거래대금 (원화 환산) */}
                         <div className="text-[10px] sm:text-[11px] text-slate-400">
-                          {coin.binancePrice > 0 ? formatTradeVolume(binanceKrwVolume) : '-'}
+                          {coin.hasBinanceData && coin.binancePrice > 0 && binanceKrwVolume > 0 ? (
+                            formatTradeVolume(binanceKrwVolume)
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
                         </div>
                       </div>
                     </td>

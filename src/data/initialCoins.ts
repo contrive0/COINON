@@ -2,7 +2,7 @@ import { CoinData } from '../types/crypto';
 
 export const INITIAL_EXCHANGE_RATE = 1442.5;
 
-export const INITIAL_COINS: CoinData[] = [
+const RAW_INITIAL_COINS: CoinData[] = [
   {
     "symbol": "BTC",
     "nameKo": "비트코인",
@@ -7177,6 +7177,32 @@ export const INITIAL_COINS: CoinData[] = [
     "low52wDiffRate": 33.33,
     "high24hPrice": 0.000487,
     "low24hPrice": 0.000482,
-    "lastUpdated": 1793703384007
+    "lastUpdated": 0
   }
 ];
+
+// 처음 접속 시 업비트/바이낸스에서 데이터를 수신하기 전까지 모든 시세를 미수신 상태(hasUpbitData: false, hasBinanceData: false)로 초기화
+export const INITIAL_COINS: CoinData[] = RAW_INITIAL_COINS.map((c) => ({
+  ...c,
+  hasUpbitData: false,
+  hasBinanceData: false,
+  upbitPrice: 0,
+  prevUpbitPrice: 0,
+  upbitChangeRate: 0,
+  upbitChangePrice: 0,
+  upbitVolume24h: 0,
+  binancePrice: 0,
+  prevBinancePrice: 0,
+  binanceChangeRate: 0,
+  binanceVolume24h: 0,
+  binanceKrwPrice: 0,
+  kimchiPremiumRate: 0,
+  kimchiDiffPrice: 0,
+  high52wPrice: 0,
+  high52wDiffRate: 0,
+  low52wPrice: 0,
+  low52wDiffRate: 0,
+  high24hPrice: 0,
+  low24hPrice: 0,
+  lastUpdated: 0,
+}));
