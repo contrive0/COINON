@@ -131,12 +131,12 @@ export const CoinTable: React.FC<CoinTableProps> = ({
 
   const renderSortIndicator = (field: SortField) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 ml-1 inline opacity-40 group-hover:opacity-100 transition-opacity" />;
+      return <ArrowUpDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 ml-0.5 sm:ml-1 inline shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />;
     }
     return sortOrder === 'asc' ? (
-      <ArrowUp className="w-3.5 h-3.5 text-indigo-400 ml-1 inline font-bold" />
+      <ArrowUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 ml-0.5 sm:ml-1 inline shrink-0 font-bold" />
     ) : (
-      <ArrowDown className="w-3.5 h-3.5 text-indigo-400 ml-1 inline font-bold" />
+      <ArrowDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 ml-0.5 sm:ml-1 inline shrink-0 font-bold" />
     );
   };
 
@@ -241,15 +241,15 @@ export const CoinTable: React.FC<CoinTableProps> = ({
       <div className="w-full overflow-x-auto rounded-xl border border-slate-800/90 bg-[#0f141d] shadow-2xl">
         <table className="w-full text-left border-collapse table-fixed md:table-auto">
           <thead>
-            <tr className="bg-[#141a24]/90 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none">
+            <tr className="bg-[#141a24]/90 border-b border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-tight sm:tracking-wider select-none">
               
               {/* 1. 이름 */}
               <th 
                 onClick={() => onSort('symbol')}
-                className="py-2.5 sm:py-3 px-1.5 sm:px-2 md:px-3 cursor-pointer hover:text-slate-200 transition-colors w-[26%] sm:w-[22%] md:w-[18%]"
+                className="py-2.5 sm:py-3 px-1 sm:px-2 md:px-3 cursor-pointer hover:text-slate-200 transition-colors w-[23%] sm:w-[22%] md:w-[18%] whitespace-nowrap"
               >
-                <div className="flex items-center group">
-                  <span>이름</span>
+                <div className="flex items-center group whitespace-nowrap">
+                  <span className="whitespace-nowrap">이름</span>
                   {renderSortIndicator('symbol')}
                 </div>
               </th>
@@ -257,10 +257,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 2. 현재가 */}
               <th 
                 onClick={() => onSort('upbitPrice')}
-                className="py-2.5 sm:py-3 px-1.5 sm:px-2 md:px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[24%] sm:w-[22%] md:w-[16%]"
+                className="py-2.5 sm:py-3 px-1 sm:px-2 md:px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[23%] sm:w-[22%] md:w-[16%] whitespace-nowrap"
               >
-                <div className="flex items-center justify-end group">
-                  <span>현재가</span>
+                <div className="flex items-center justify-end group whitespace-nowrap">
+                  <span className="whitespace-nowrap">현재가</span>
                   {renderSortIndicator('upbitPrice')}
                 </div>
               </th>
@@ -268,10 +268,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 3. 김프 */}
               <th 
                 onClick={() => onSort('kimchiPremiumRate')}
-                className="py-2.5 sm:py-3 px-1 sm:px-2 md:px-2.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[16%] sm:w-[15%] md:w-[13%]"
+                className="py-2.5 sm:py-3 px-0.5 sm:px-2 md:px-2.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[14%] sm:w-[14%] md:w-[13%] whitespace-nowrap"
               >
-                <div className="flex items-center justify-end group">
-                  <span>김프</span>
+                <div className="flex items-center justify-end group whitespace-nowrap">
+                  <span className="whitespace-nowrap">김프</span>
                   {renderSortIndicator('kimchiPremiumRate')}
                 </div>
               </th>
@@ -279,10 +279,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 4. 전일대비 */}
               <th 
                 onClick={() => onSort('upbitChangeRate')}
-                className="py-2.5 sm:py-3 px-1 sm:px-2 md:px-2.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[17%] sm:w-[15%] md:w-[13%]"
+                className="py-2.5 sm:py-3 px-0.5 sm:px-1.5 md:px-2.5 text-right cursor-pointer hover:text-slate-200 transition-colors w-[20%] sm:w-[16%] md:w-[13%] whitespace-nowrap"
               >
-                <div className="flex items-center justify-end group">
-                  <span>전일대비</span>
+                <div className="flex items-center justify-end group whitespace-nowrap">
+                  <span className="whitespace-nowrap">전일대비</span>
                   {renderSortIndicator('upbitChangeRate')}
                 </div>
               </th>
@@ -290,10 +290,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 5. 고가대비(52주) - Desktop only */}
               <th 
                 onClick={() => onSort('high52wDiffRate')}
-                className="hidden md:table-cell py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[12%]"
+                className="hidden md:table-cell py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[12%] whitespace-nowrap"
               >
-                <div className="flex items-center justify-end group">
-                  <span>고가대비(52주)</span>
+                <div className="flex items-center justify-end group whitespace-nowrap">
+                  <span className="whitespace-nowrap">고가대비(52주)</span>
                   {renderSortIndicator('high52wDiffRate')}
                 </div>
               </th>
@@ -301,10 +301,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 6. 저가대비(52주) - Desktop only */}
               <th 
                 onClick={() => onSort('low52wDiffRate')}
-                className="hidden md:table-cell py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[12%]"
+                className="hidden md:table-cell py-3 px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[12%] whitespace-nowrap"
               >
-                <div className="flex items-center justify-end group">
-                  <span>저가대비(52주)</span>
+                <div className="flex items-center justify-end group whitespace-nowrap">
+                  <span className="whitespace-nowrap">저가대비(52주)</span>
                   {renderSortIndicator('low52wDiffRate')}
                 </div>
               </th>
@@ -312,10 +312,10 @@ export const CoinTable: React.FC<CoinTableProps> = ({
               {/* 7. 거래액(일) */}
               <th 
                 onClick={() => onSort('upbitVolume24h')}
-                className="py-2.5 sm:py-3 px-1.5 sm:px-2 md:px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[17%] sm:w-[16%] md:w-[16%]"
+                className="py-2.5 sm:py-3 px-0.5 sm:px-1.5 md:px-3 text-right cursor-pointer hover:text-slate-200 transition-colors w-[20%] sm:w-[16%] md:w-[16%] whitespace-nowrap"
               >
-                <div className="flex items-center justify-end group">
-                  <span>거래액(일)</span>
+                <div className="flex items-center justify-end group whitespace-nowrap">
+                  <span className="whitespace-nowrap">거래액(일)</span>
                   {renderSortIndicator('upbitVolume24h')}
                 </div>
               </th>
@@ -357,7 +357,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                   >
                     
                     {/* 1. 코인이름: 1행(아이콘 + 한글명), 2행(별 + 심볼(BTC) + 미니차트/지갑) */}
-                    <td className="py-2 sm:py-2.5 px-1.5 sm:px-2 md:px-3 font-sans truncate">
+                    <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-3 font-sans truncate">
                       <div className="flex flex-col min-w-0">
                         {/* 1행: 코인 아이콘 + 한글명 (예: 🟠 비트코인) */}
                         <div className="flex items-center space-x-1 sm:space-x-1.5 min-w-0">
@@ -393,7 +393,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     </td>
 
                     {/* 2. 현재가: 1행(업비트 현재가), 2행(해외 환산가) */}
-                    <td className="py-2 sm:py-2.5 px-1.5 sm:px-2 md:px-3 text-right">
+                    <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-3 text-right">
                       <div className="flex flex-col items-end">
                         {/* 1행: 업비트 현재가 */}
                         <div className="font-bold text-slate-100 text-[11px] sm:text-xs">
@@ -415,7 +415,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     </td>
 
                     {/* 3. 김프: 1행(김프 %), 2행(차액) */}
-                    <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-2.5 text-right">
+                    <td className="py-2 sm:py-2.5 px-0.5 sm:px-2 md:px-2.5 text-right">
                       <div className="flex flex-col items-end">
                         {coin.hasUpbitData && coin.hasBinanceData && coin.binancePrice > 0 ? (
                           <>
@@ -438,7 +438,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     </td>
 
                     {/* 4. 전일대비: 1행(등락률 %), 2행(변동금액) */}
-                    <td className="py-2 sm:py-2.5 px-1 sm:px-2 md:px-2.5 text-right">
+                    <td className="py-2 sm:py-2.5 px-0.5 sm:px-1.5 md:px-2.5 text-right">
                       <div className="flex flex-col items-end">
                         {coin.hasUpbitData ? (
                           <>
@@ -503,7 +503,7 @@ export const CoinTable: React.FC<CoinTableProps> = ({
                     </td>
 
                     {/* 7. 거래액(일): 1행(업비트 일거래액), 2행(해외 일거래액 환산) */}
-                    <td className="py-2 sm:py-2.5 px-1.5 sm:px-2 md:px-3 text-right">
+                    <td className="py-2 sm:py-2.5 px-0.5 sm:px-1.5 md:px-3 text-right">
                       <div className="flex flex-col items-end">
                         {/* 1행: 업비트 일 거래대금 */}
                         <div className="font-bold text-slate-200 text-[11px] sm:text-xs">
