@@ -10,7 +10,7 @@ import {
   Pause,
   DollarSign
 } from 'lucide-react';
-import { ColorTheme, ExchangeRateInfo } from '../types/crypto';
+import { ColorTheme, ExchangeRateInfo, CoinData } from '../types/crypto';
 import { formatKrw, formatExchangeRate, formatPercent, getPriceChangeColor } from '../utils/formatters';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -27,6 +27,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   btcKimchi: number;
   isLiveApi: boolean;
+  usdtCoin?: CoinData;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -42,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   btcKimchi,
   isLiveApi,
+  usdtCoin,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-[#0e121a]/95 backdrop-blur-md border-b border-slate-800/90 shadow-lg">
@@ -49,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-y-2">
           
           {/* Logo & Service Name */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 order-1">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-md shadow-indigo-500/20 text-white font-black text-sm tracking-tighter">
               ON
             </div>
@@ -62,37 +64,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Central Market Metrics & Exchange Rate */}
-          <div className="flex items-center space-x-2 sm:space-x-4 bg-[#141a24] px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
-            {/* Exchange Rate */}
-            <div className="flex items-center space-x-1.5 cursor-pointer hover:text-indigo-300 transition-colors" onClick={onOpenSettings} title="환율 설정 클릭">
-              <span className="text-slate-400 flex items-center">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400 mr-0.5" />
-                USD/KRW
-              </span>
-              <span className="font-mono-numbers font-bold text-white text-sm">
-                {exchangeRate.rate > 0 ? `₩${formatExchangeRate(exchangeRate.rate)}` : '실시간 수신 중...'}
-              </span>
-              {exchangeRate.rate > 0 && (
-                <span className={`text-[11px] font-mono-numbers ${getPriceChangeColor(exchangeRate.changeRate, colorTheme)}`}>
-                  ({formatPercent(exchangeRate.changeRate)})
-                </span>
-              )}
-            </div>
-
-            <div className="hidden sm:block h-3.5 w-px bg-slate-700/60" />
-
-            {/* BTC Kimp */}
-            <div className="hidden sm:flex items-center space-x-1.5">
-              <span className="text-slate-400">BTC 김프</span>
-              <span className={`font-mono-numbers font-bold ${getPriceChangeColor(btcKimchi, colorTheme)}`}>
-                {formatPercent(btcKimchi)}
-              </span>
-            </div>
-          </div>
-
-          {/* Action Toolbar */}
-          <div className="flex items-center space-x-1 sm:space-x-2">
+          {/* Action Toolbar (5+ buttons on top-right for mobile) */}
+          <div className="flex items-center space-x-1 sm:space-x-2 order-2 sm:order-3">
             
             {/* Korean vs Global Color Toggle */}
             <button
@@ -153,6 +126,55 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Settings className="w-4 h-4 text-slate-300" />
             </button>
+          </div>
+
+          {/* Central Market Metrics: 환율 & 업비트 USDT & BTC 김프 (모바일에서는 5개 버튼 아래로 배치, 김프는 모바일 숨김) */}
+          <div className="order-3 sm:order-2 w-full sm:w-auto flex items-center justify-around sm:justify-start space-x-2 sm:space-x-3 bg-[#141a24] px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-800 text-xs overflow-x-auto scrollbar-none">
+            {/* 1. 환율 (USD/KRW) */}
+            <div className="flex items-center space-x-1 sm:space-x-1.5 cursor-pointer hover:text-indigo-300 transition-colors shrink-0" onClick={onOpenSettings} title="환율 설정 클릭">
+              <span className="text-slate-400 flex items-center">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400 mr-0.5" />
+                <span className="hidden xs:inline">USD/KRW</span>
+                <span className="xs:hidden">USD</span>
+              </span>
+              <span className="font-mono-numbers font-bold text-white text-xs sm:text-sm">
+                {exchangeRate.rate > 0 ? `₩${formatExchangeRate(exchangeRate.rate)}` : '-'}
+              </span>
+              {exchangeRate.rate > 0 && (
+                <span className={`text-[10px] sm:text-[11px] font-mono-numbers ${getPriceChangeColor(exchangeRate.changeRate, colorTheme)}`}>
+                  ({formatPercent(exchangeRate.changeRate)})
+                </span>
+              )}
+            </div>
+
+            <div className="h-3.5 w-px bg-slate-700/60 shrink-0" />
+
+            {/* 2. 업비트 USDT 가격 */}
+            <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0" title="업비트 테더(USDT) 실시간 원화 가격">
+              <span className="text-slate-400 flex items-center font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 inline-block" />
+                <span className="hidden xs:inline">업비트 </span>USDT
+              </span>
+              <span className="font-mono-numbers font-bold text-emerald-400 text-xs sm:text-sm">
+                {usdtCoin && usdtCoin.hasUpbitData && usdtCoin.upbitPrice > 0 
+                  ? `₩${formatKrw(usdtCoin.upbitPrice)}` 
+                  : '-'}
+              </span>
+              {usdtCoin && usdtCoin.hasUpbitData && usdtCoin.upbitPrice > 0 && (
+                <span className={`text-[10px] sm:text-[11px] font-mono-numbers ${getPriceChangeColor(usdtCoin.upbitChangeRate, colorTheme)}`}>
+                  ({formatPercent(usdtCoin.upbitChangeRate)})
+                </span>
+              )}
+            </div>
+
+            {/* 3. BTC Kimp (모바일에서만 삭제/숨김, 데스크톱에서만 노출) */}
+            <div className="hidden sm:block h-3.5 w-px bg-slate-700/60 shrink-0" />
+            <div className="hidden sm:flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+              <span className="text-slate-400">BTC 김프</span>
+              <span className={`font-mono-numbers font-bold text-xs sm:text-sm ${getPriceChangeColor(btcKimchi, colorTheme)}`}>
+                {btcKimchi !== 0 ? formatPercent(btcKimchi) : '-'}
+              </span>
+            </div>
           </div>
 
         </div>

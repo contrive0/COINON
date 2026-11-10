@@ -287,6 +287,7 @@ export default function App() {
 
   const btcCoin = coins.find((c) => c.symbol === 'BTC');
   const btcKimchi = btcCoin ? btcCoin.kimchiPremiumRate : 0;
+  const usdtCoin = coins.find((c) => c.symbol === 'USDT' || c.upbitMarket === 'KRW-USDT');
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col font-sans">
@@ -305,6 +306,7 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         btcKimchi={btcKimchi}
         isLiveApi={isLiveApi}
+        usdtCoin={usdtCoin}
       />
 
       {/* 2. Market Overview: TradingView BTC chart, screener, and disclaimer notice */}
@@ -337,16 +339,12 @@ export default function App() {
         <div className="max-w-[1600px] mx-auto px-3 sm:px-6 flex flex-wrap items-center justify-between gap-y-2">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-slate-300">코인온 (CoinOn)</span>
-            <span>·</span>
-            <span></span>
           </div>
 
           <div className="flex items-center space-x-4 text-[11px] text-slate-400">
             <span>국내 마켓: 업비트 (Upbit KRW)</span>
             <span>·</span>
             <span>해외 마켓: 바이낸스 (Binance USDT)</span>
-            <span>·</span>
-            <span>외부 광고 및 스폰서 배너 100% 배제</span>
           </div>
         </div>
       </footer>
